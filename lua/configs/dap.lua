@@ -1,126 +1,126 @@
 local ok_dap, dap = pcall(require, "dap")
 if not ok_dap then
-  return
+    return
 end
 
 local ok_dapui, dapui = pcall(require, "dapui")
 if not ok_dapui then
-  return
+    return
 end
 
 -- 1. CONFIGURACIÓN DE LA UI
 dapui.setup {
-  controls = {
-    enabled = true,
-    icons = {
-      pause = "⏸",
-      play = "▶",
-      step_into = "⏎",
-      step_over = "⏭",
-      step_out = "⏮",
-      step_back = "b",
-      run_last = "▶▶",
-      terminate = "⏹",
-      disconnect = "⏏",
+    controls = {
+        enabled = true,
+        icons = {
+            pause = "⏸",
+            play = "▶",
+            step_into = "⏎",
+            step_over = "⏭",
+            step_out = "⏮",
+            step_back = "b",
+            run_last = "▶▶",
+            terminate = "⏹",
+            disconnect = "⏏",
+        },
     },
-  },
 }
 
 -- 2. AUTO-OPEN BLINDADO
 dap.listeners.after.event_initialized["dapui_config"] = function()
-  dapui.open()
+    dapui.open()
 end
 
 -- ── HELPER: Búsqueda dinámica de Python ──────────────────────────
 local function get_python_path()
-  local cwd_venv = vim.fn.getcwd() .. "/.venv/bin/python"
-  if vim.fn.executable(cwd_venv) == 1 then
-    return cwd_venv
-  end
-  local cwd_venv2 = vim.fn.getcwd() .. "/venv/bin/python"
-  if vim.fn.executable(cwd_venv2) == 1 then
-    return cwd_venv2
-  end
-  local mason_python = vim.fn.stdpath "data" .. "/mason/packages/debugpy/venv/bin/python"
-  if vim.fn.executable(mason_python) == 1 then
-    return mason_python
-  end
-  return vim.fn.exepath "python3" or "/usr/bin/python3"
+    local cwd_venv = vim.fn.getcwd() .. "/.venv/bin/python"
+    if vim.fn.executable(cwd_venv) == 1 then
+        return cwd_venv
+    end
+    local cwd_venv2 = vim.fn.getcwd() .. "/venv/bin/python"
+    if vim.fn.executable(cwd_venv2) == 1 then
+        return cwd_venv2
+    end
+    local mason_python = vim.fn.stdpath "data" .. "/mason/packages/debugpy/venv/bin/python"
+    if vim.fn.executable(mason_python) == 1 then
+        return mason_python
+    end
+    return vim.fn.exepath "python3" or "/usr/bin/python3"
 end
 
 -- 3. ADAPTADORES
 dap.adapters.python = function(cb, config)
-  if config.request == "attach" then
-    local port = (config.connect or config).port
-    local host = (config.connect or config).host or "127.0.0.1"
-    cb {
-      type = "server",
-      port = assert(port, "`connect.port` is required for python `attach`"),
-      host = host,
-      options = { source_filetype = "python" },
-    }
-  else
-    cb {
-      type = "executable",
-      command = get_python_path(),
-      args = { "-m", "debugpy.adapter" },
-      options = { source_filetype = "python" },
-    }
-  end
+    if config.request == "attach" then
+        local port = (config.connect or config).port
+        local host = (config.connect or config).host or "127.0.0.1"
+        cb {
+            type = "server",
+            port = assert(port, "`connect.port` is required for python `attach`"),
+            host = host,
+            options = { source_filetype = "python" },
+        }
+    else
+        cb {
+            type = "executable",
+            command = get_python_path(),
+            args = { "-m", "debugpy.adapter" },
+            options = { source_filetype = "python" },
+        }
+    end
 end
 
 dap.adapters.codelldb = {
-  type = "server",
-  port = "${port}",
-  executable = { command = vim.fn.stdpath "data" .. "/mason/bin/codelldb", args = { "--port", "${port}" } },
+    type = "server",
+    port = "${port}",
+    executable = { command = vim.fn.stdpath "data" .. "/mason/bin/codelldb", args = { "--port", "${port}" } },
 }
 dap.adapters.cppdbg = { type = "executable", command = vim.fn.stdpath "data" .. "/mason/bin/OpenDebugAD7" }
 dap.adapters.rust = dap.adapters.codelldb
 dap.adapters.delve = {
-  type = "server",
-  port = "${port}",
-  executable = { command = "dlv", args = { "dap", "-l", "127.0.0.1:${port}" } },
+    type = "server",
+    port = "${port}",
+    executable = { command = "dlv", args = { "dap", "-l", "127.0.0.1:${port}" } },
 }
 
 -- 4. CONFIGURACIONES MAESTRAS
 dap.configurations.python = {
-  {
-    type = "python",
-    request = "launch",
-    name = "Lanzar archivo actual",
-    program = "${file}",
-    pythonPath = get_python_path,
-    console = "internalConsole",
-  },
+    {
+        type = "python",
+        request = "launch",
+        name = "Lanzar archivo actual",
+        program = "${file}",
+        pythonPath = get_python_path,
+        console = "internalConsole",
+    },
 }
 
 dap.configurations.c = {
-  {
-    name = "Launch (codelldb)",
-    type = "codelldb",
-    request = "launch",
-    program = function()
-      return vim.fn.input("Ejecutable: ", vim.fn.getcwd() .. "/", "file")
-    end,
-    cwd = "${workspaceFolder}",
-    stopOnEntry = false,
-  },
+    {
+        name = "Launch (codelldb)",
+        type = "codelldb",
+        request = "launch",
+        program = function()
+            return vim.fn.input("Ejecutable: ", vim.fn.getcwd() .. "/", "file")
+        end,
+        cwd = "${workspaceFolder}",
+        stopOnEntry = false,
+    },
 }
 dap.configurations.cpp = dap.configurations.c
 
 dap.configurations.rust = {
-  {
-    name = "Launch (codelldb)",
-    type = "codelldb",
-    request = "launch",
-    program = function()
-      vim.fn.system "cargo build"
-      return vim.fn.input("Ejecutable: ", vim.fn.getcwd() .. "/target/debug/", "file")
-    end,
-    cwd = "${workspaceFolder}",
-    stopOnEntry = false,
-  },
+    {
+        name = "Launch (codelldb)",
+        type = "codelldb",
+        request = "launch",
+        program = function()
+            vim.fn.system "cargo build"
+            return vim.fn.input("Ejecutable: ", vim.fn.getcwd() .. "/target/debug/", "file")
+        end,
+        cwd = "${workspaceFolder}",
+        stopOnEntry = false,
+    },
 }
 dap.configurations.go = {
-  { type = "delve", name = "Debug", request = "launch", program = "${file}" },
+    { type = "delve", name = "Debug", request = "launch", program = "${file}" },
 }

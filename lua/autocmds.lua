@@ -1,7 +1,6 @@
 require "nvchad.autocmds"
 
 -- ── FIX PERMISOS MASON ───────────────────────────────────────────
--- Segunda y tercera capa de seguridad (la primera está en init.lua)
 local mason_bin = vim.fn.stdpath "data" .. "/mason/bin"
 
 vim.api.nvim_create_autocmd("VimEnter", {
@@ -52,6 +51,29 @@ vim.api.nvim_create_autocmd("BufWritePre", {
     callback = function()
         local pos = vim.api.nvim_win_get_cursor(0)
         vim.cmd [[%s/\s\+$//e]]
-        vim.api.nvim_win_set_cursor(0, pos)
+        pcall(vim.api.nvim_win_set_cursor, 0, pos)
+    end,
+})
+
+-- ── NUMERACIÓN HÍBRIDA A PRUEBA DE FALLOS ────────────────────────
+local numeracion_group = vim.api.nvim_create_augroup("NumeracionHibrida", { clear = true })
+
+-- Al entrar en modo Insertar: Números Absolutos
+vim.api.nvim_create_autocmd({ "InsertEnter" }, {
+    group = numeracion_group,
+    pattern = "*",
+    callback = function()
+        vim.opt_local.relativenumber = false
+    end,
+})
+
+-- Al salir de modo Insertar o moverte por ventanas: Números Relativos
+vim.api.nvim_create_autocmd({ "InsertLeave", "BufEnter", "FocusGained" }, {
+    group = numeracion_group,
+    pattern = "*",
+    callback = function()
+        if vim.opt_local.number:get() then
+            vim.opt_local.relativenumber = true
+        end
     end,
 })
