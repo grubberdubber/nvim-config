@@ -85,6 +85,3 @@ nvim
 | `<leader>rn` | LSP: Renombrar símbolo en el código |
 | `<Tab>/<S-Tab>` | Siguiente / Anterior buffer |
 | `Alt+j/k` | Mover línea o selección arriba/abajo |
-
-```
-
