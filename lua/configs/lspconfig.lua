@@ -1,9 +1,17 @@
-local lspconfig = require "lspconfig"
 local nvchad_lsp = require "nvchad.configs.lspconfig"
 
 local on_attach = nvchad_lsp.on_attach
 local on_init = nvchad_lsp.on_init
 local capabilities = nvchad_lsp.capabilities
+
+-- ╔══════════════════════════════════════════════════════════════╗
+-- ║  CONFIG BASE PARA TODOS LOS SERVIDORES                       ║
+-- ╚══════════════════════════════════════════════════════════════╝
+vim.lsp.config("*", {
+    on_attach = on_attach,
+    on_init = on_init,
+    capabilities = capabilities,
+})
 
 -- ╔══════════════════════════════════════════════════════════════╗
 -- ║  LISTA MAESTRA — Servidores LSP                              ║
@@ -30,39 +38,41 @@ local servers = {
     "julials",
     "sqlls",
     "metals",
+    "lua_ls",
 }
 
-for _, lsp in ipairs(servers) do
-    local opts = {
-        on_attach = on_attach,
-        on_init = on_init,
-        capabilities = capabilities,
-    }
-
-    -- Configuración avanzada para Python (Pyright)
-    if lsp == "pyright" then
-        opts.settings = {
-            python = {
-                analysis = {
-                    diagnosticMode = "openFilesOnly",
-                    typeCheckingMode = "basic",
-                    -- Aquí aplicamos el silenciador táctico para librerías como Numpy
-                    reportUnknownMemberType = "none",
-                    reportUnknownArgumentType = "none",
-                    reportUnknownVariableType = "none",
-                },
+-- ── Pyright: análisis avanzado ────────────────────────────────
+vim.lsp.config("pyright", {
+    settings = {
+        python = {
+            analysis = {
+                diagnosticMode = "openFilesOnly",
+                typeCheckingMode = "basic",
+                reportUnknownMemberType = "none",
+                reportUnknownArgumentType = "none",
+                reportUnknownVariableType = "none",
             },
-        }
-    end
+        },
+    },
+})
 
-    lspconfig[lsp].setup(opts)
-end
+-- ── sqlls: dialecto MySQL, sin diagnostics ────────────────────
+-- El parser interno de sql-language-server es demasiado frágil para SQL
+-- real (falla con CTEs, window functions, dialectos, multi-statement).
+-- Descartamos sus diagnostics por completo en vez de filtrarlos.
+vim.lsp.config("sqlls", {
+    settings = {
+        sqlLanguageServer = {
+            adapter = "mysql",
+        },
+    },
+    handlers = {
+        ["textDocument/publishDiagnostics"] = function() end,
+    },
+})
 
--- ── LUA: configuración especial para desarrollo de Neovim ────────
-lspconfig.lua_ls.setup {
-    on_attach = on_attach,
-    on_init = on_init,
-    capabilities = capabilities,
+-- ── Lua: desarrollo de Neovim ──────────────────────────────────
+vim.lsp.config("lua_ls", {
     settings = {
         Lua = {
             diagnostics = { globals = { "vim" } },
@@ -70,4 +80,6 @@ lspconfig.lua_ls.setup {
             telemetry = { enable = false },
         },
     },
-}
+})
+
+vim.lsp.enable(servers)

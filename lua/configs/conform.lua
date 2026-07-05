@@ -29,9 +29,9 @@ local options = {
 
         -- ── Ciencia de Datos ─────────────────────────────────────────
         r = { "styler" },
-        sql = { "sql_formatter" },
-        mysql = { "sql_formatter" },
-        plsql = { "sql_formatter" },
+        sql = { "sql_formatter", "sqlfluff" },
+        mysql = { "sql_formatter", "sqlfluff" },
+        plsql = { "sql_formatter", "sqlfluff" },
     },
 
     -- Formatea al guardar sin bloquear el editor

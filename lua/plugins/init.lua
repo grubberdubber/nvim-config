@@ -20,6 +20,14 @@ local plugins = {
         },
     },
 
+    {
+        "mfussenegger/nvim-lint",
+        event = { "BufWritePost", "BufReadPost", "InsertLeave" },
+        config = function()
+            require "configs.lint"
+        end,
+    },
+
     -- ── 2. COLOR PICKER PARA CSS ───────────────────────────────────
     {
         "uga-rosa/ccc.nvim",
@@ -41,10 +49,7 @@ local plugins = {
         config = function()
             local hooks = require "ibl.hooks"
             hooks.register(hooks.type.HIGHLIGHT_SETUP, function()
-                -- Color gris inactivo para las líneas verticales que no estás tocando
                 vim.api.nvim_set_hl(0, "IblIndentOpaque", { fg = "#4b5263" })
-
-                -- Colores del Scope Rainbow
                 vim.api.nvim_set_hl(0, "RainbowRed", { fg = "#E06C75", bold = true })
                 vim.api.nvim_set_hl(0, "RainbowYellow", { fg = "#E5C07B", bold = true })
                 vim.api.nvim_set_hl(0, "RainbowBlue", { fg = "#61AFEF", bold = true })
@@ -55,13 +60,13 @@ local plugins = {
 
             require("ibl").setup {
                 indent = {
-                    char = "│", -- Dibuja SIEMPRE la línea vertical (los puntitos los pone Neovim en medio)
-                    highlight = "IblIndentOpaque", -- Las líneas inactivas son grises
+                    char = "│",
+                    highlight = "IblIndentOpaque",
                 },
                 scope = {
                     enabled = true,
                     char = "│",
-                    show_start = false, -- Desactivado para que no estorbe (sin guiones arriba/abajo)
+                    show_start = false,
                     show_end = false,
                     highlight = {
                         "RainbowRed",
@@ -104,6 +109,7 @@ local plugins = {
                 "ktlint",
                 "scalafmt",
                 "sql-formatter",
+                "sqlfluff",
                 "js-debug-adapter",
             }
             local ok, mr = pcall(require, "mason-registry")
@@ -158,43 +164,63 @@ local plugins = {
         end,
     },
 
+    -- ── ÁRBOL DE SINTAXIS UNIFICADO (TREESITTER + TEXTOBJECTS) ─────
     {
         "nvim-treesitter/nvim-treesitter",
+        branch = "master",
+        build = ":TSUpdate",
         lazy = false,
-        opts = {
-            ensure_installed = {
-                "vim",
-                "lua",
-                "vimdoc",
-                "html",
-                "css",
-                "javascript",
-                "typescript",
-                "php",
-                "c",
-                "cpp",
-                "rust",
-                "go",
-                "c_sharp",
-                "swift",
-                "kotlin",
-                "java",
-                "objc",
-                "asm",
-                "python",
-                "bash",
-                "powershell",
-                "ruby",
-                "perl",
-                "r",
-                "julia",
-                "matlab",
-                "sql",
-                "scala",
-            },
-            highlight = { enable = true },
-            indent = { enable = true },
+        dependencies = {
+            "nvim-treesitter/nvim-treesitter-textobjects",
         },
+        config = function()
+            require("nvim-treesitter.configs").setup {
+                ensure_installed = {
+                    "vim",
+                    "lua",
+                    "vimdoc",
+                    "html",
+                    "css",
+                    "javascript",
+                    "typescript",
+                    "php",
+                    "c",
+                    "cpp",
+                    "rust",
+                    "go",
+                    "c_sharp",
+                    "kotlin",
+                    "java",
+                    "objc",
+                    "asm",
+                    "python",
+                    "bash",
+                    "powershell",
+                    "ruby",
+                    "perl",
+                    "r",
+                    "julia",
+                    "matlab",
+                    "sql",
+                    "scala",
+                },
+                highlight = { enable = true },
+                indent = { enable = true },
+                textobjects = {
+                    select = {
+                        enable = true,
+                        lookahead = true,
+                        keymaps = {
+                            ["af"] = "@function.outer",
+                            ["if"] = "@function.inner",
+                            ["ac"] = "@class.outer",
+                            ["ic"] = "@class.inner",
+                            ["aq"] = "@statement.outer",
+                        },
+                    },
+                },
+            }
+        end,
     },
 
     {
@@ -210,7 +236,7 @@ local plugins = {
             require("colorizer").setup()
         end,
     },
-    -- ... (tus otros plugins)
+
     {
         "ThePrimeagen/harpoon",
         branch = "harpoon2",
@@ -219,7 +245,7 @@ local plugins = {
             require("harpoon"):setup()
         end,
     },
-    -- ...
+
     {
         "aca/emmet-ls",
         ft = { "html", "css", "javascript", "typescript", "php" },
@@ -232,6 +258,7 @@ local plugins = {
             vim.keymap.set("i", "<C-g>", function()
                 return vim.fn["codeium#Accept"]()
             end, { expr = true, silent = true })
+
             vim.keymap.set("i", "<C-]>", function()
                 return vim.fn["codeium#Clear"]()
             end, { expr = true, silent = true })
@@ -263,6 +290,7 @@ local plugins = {
                 local function bmap(mode, l, r, desc)
                     vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })
                 end
+
                 bmap("n", "]c", function()
                     if vim.wo.diff then
                         return "]c"
@@ -272,6 +300,7 @@ local plugins = {
                     end)
                     return "<Ignore>"
                 end, "Git: Siguiente hunk")
+
                 bmap("n", "[c", function()
                     if vim.wo.diff then
                         return "[c"
@@ -281,6 +310,7 @@ local plugins = {
                     end)
                     return "<Ignore>"
                 end, "Git: Hunk anterior")
+
                 bmap("n", "<leader>ph", gs.preview_hunk, "Git: Preview hunk")
                 bmap("n", "<leader>gs", gs.stage_hunk, "Git: Stage hunk")
                 bmap("n", "<leader>gr", gs.reset_hunk, "Git: Reset hunk")
@@ -356,7 +386,7 @@ local plugins = {
             require("oil").setup {
                 columns = { "icon" },
                 view_options = {
-                    show_hidden = true, -- Ver archivos ocultos por defecto
+                    show_hidden = true,
                 },
             }
         end,
@@ -366,12 +396,12 @@ local plugins = {
     {
         "folke/persistence.nvim",
         event = "BufReadPre",
-        opts = {}, -- Carga automática al abrir Neovim
+        opts = {},
     },
 
     {
         "nvim-telescope/telescope-fzf-native.nvim",
-        build = "make", -- Necesitas tener 'make' instalado en tu sistema
+        build = "make",
     },
 
     -- ── 6. DAP DEBUGGER ────────────────────────────────────────────
@@ -389,6 +419,24 @@ local plugins = {
                 automatic_installation = true,
             }
             require "configs.dap"
+        end,
+    },
+
+    -- ── 10. SQL STAFF & NAVEGADOR DE ESTRUCTURAS ───────────────────
+    {
+        "stevearc/aerial.nvim",
+        lazy = false,
+        dependencies = {
+            "nvim-treesitter/nvim-treesitter",
+            "nvim-tree/nvim-web-devicons",
+        },
+        config = function()
+            require("aerial").setup {
+                backends = { "treesitter", "lsp", "markdown", "man" },
+                layout = { default_direction = "prefer_right", min_width = 28 },
+                show_guides = false,
+                filter_kind = false,
+            }
         end,
     },
 }
