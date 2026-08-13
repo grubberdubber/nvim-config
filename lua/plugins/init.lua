@@ -1,7 +1,46 @@
 local plugins = {
-    { "windwp/nvim-autopairs", enabled = false },
-    { "windwp/nvim-ts-autotag", enabled = false },
+    -- ── DESACTIVA nvim-cmp (viene de NvChad base) ───────────────────
+    { "hrsh7th/nvim-cmp", enabled = false },
 
+    -- ── BLINK.CMP — Motor de autocompletado ─────────────────────────
+    {
+        "saghen/blink.cmp",
+        version = "1.*",
+        dependencies = {
+            "rafamadriz/friendly-snippets",
+            {
+                "saghen/blink.compat",
+                version = "*",
+                lazy = true,
+                opts = {},
+            },
+        },
+        event = "InsertEnter",
+        opts = require "configs.blink",
+        opts_extend = { "sources.default" },
+    },
+
+    -- ── AUTOPAIRS (integrado con blink.cmp) ──────────────────────────
+    {
+        "windwp/nvim-autopairs",
+        event = "InsertEnter",
+        config = function()
+            require("nvim-autopairs").setup {
+                check_ts = true,
+                ts_config = {
+                    lua = { "string" },
+                    python = { "string" },
+                },
+                fast_wrap = { map = "<M-e>" },
+            }
+        end,
+    },
+    {
+        "windwp/nvim-ts-autotag",
+        event = { "BufReadPre", "BufNewFile" },
+        ft = { "html", "xml", "javascript", "typescript", "javascriptreact", "typescriptreact", "php", "vue", "svelte" },
+        opts = {},
+    },
     -- ── 1. HERRAMIENTAS GIT ────────────────────────────────────────
     {
         "sindrets/diffview.nvim",
@@ -45,6 +84,7 @@ local plugins = {
     -- ── 3. INDENT BLANKLINE (Líneas │ siempres visibles + Puntos ·)
     {
         "lukas-reineke/indent-blankline.nvim",
+        event = { "BufReadPre", "BufNewFile" },
         main = "ibl",
         config = function()
             local hooks = require "ibl.hooks"
@@ -57,10 +97,10 @@ local plugins = {
                 vim.api.nvim_set_hl(0, "RainbowGreen", { fg = "#98C379", bold = true })
                 vim.api.nvim_set_hl(0, "RainbowViolet", { fg = "#C678DD", bold = true })
             end)
-
             require("ibl").setup {
                 indent = {
                     char = "│",
+                    tab_char = "│",
                     highlight = "IblIndentOpaque",
                 },
                 scope = {
@@ -75,6 +115,90 @@ local plugins = {
                         "RainbowOrange",
                         "RainbowGreen",
                         "RainbowViolet",
+                    },
+                    include = {
+                        node_type = {
+                            ["*"] = {
+                                -- Python
+                                "if_statement",
+                                "elif_clause",
+                                "else_clause",
+                                "for_statement",
+                                "while_statement",
+                                "with_statement",
+                                "try_statement",
+                                "except_clause",
+                                "match_statement",
+                                "function_definition",
+                                "class_definition",
+                                -- Lua
+                                "for_in_statement",
+                                "repeat_statement",
+                                "function_declaration",
+                                "local_function",
+                                -- JS/TS
+                                "do_statement",
+                                "switch_statement",
+                                "function_expression",
+                                "arrow_function",
+                                "class_declaration",
+                                "method_definition",
+                                "interface_declaration",
+                                -- PHP
+                                "foreach_statement",
+                                "method_declaration",
+                                -- C/C++
+                                "struct_specifier",
+                                "class_specifier",
+                                "namespace_definition",
+                                "for_range_loop",
+                                -- Rust
+                                "if_expression",
+                                "for_expression",
+                                "while_expression",
+                                "loop_expression",
+                                "match_expression",
+                                "function_item",
+                                "impl_item",
+                                "trait_item",
+                                "mod_item",
+                                "struct_item",
+                                "enum_item",
+                                -- Go
+                                "expression_switch_statement",
+                                "type_switch_statement",
+                                "select_statement",
+                                "struct_type",
+                                -- Kotlin
+                                "when_expression",
+                                -- Java
+                                "enhanced_for_statement",
+                                "switch_expression",
+                                -- Bash
+                                "case_statement",
+                                -- Ruby
+                                "unless",
+                                "until",
+                                "case",
+                                "method",
+                                "class",
+                                "module",
+                                "do_block",
+                                "block",
+                                -- Dart
+                                "function_signature",
+                                "method_signature",
+                                -- Swift
+                                "guard_statement",
+                                "protocol_declaration",
+                                -- PowerShell
+                                "function_statement",
+                                -- Perl
+                                "unless_statement",
+                                "sub_definition",
+                                "package_statement",
+                            },
+                        },
                     },
                 },
             }
@@ -111,6 +235,9 @@ local plugins = {
                 "sql-formatter",
                 "sqlfluff",
                 "js-debug-adapter",
+                "java-debug-adapter",
+                "java-test",
+                "stylelint",
             }
             local ok, mr = pcall(require, "mason-registry")
             if not ok then
@@ -149,7 +276,17 @@ local plugins = {
                 "kotlin_language_server",
             },
             automatic_installation = false,
+            automatic_enable = {
+                exclude = { "jdtls" }, -- jdtls arranca vía ftplugin/java.lua (con bundles de debug), no acá
+            },
         },
+    },
+
+    -- ── VISTA PREVIA WEB EN VIVO (LIVE SERVER) ───────────────────────
+    {
+        "barrett-ruth/live-server.nvim",
+        build = "npm install -g live-server",
+        cmd = { "LiveServerStart", "LiveServerStop" },
     },
 
     {
@@ -162,6 +299,11 @@ local plugins = {
         config = function()
             require "configs.lspconfig"
         end,
+    },
+
+    {
+        "b0o/schemastore.nvim",
+        lazy = true,
     },
 
     -- ── ÁRBOL DE SINTAXIS UNIFICADO (TREESITTER + TEXTOBJECTS) ─────
@@ -203,6 +345,20 @@ local plugins = {
                     "matlab",
                     "sql",
                     "scala",
+                    "dart",
+                    "terraform",
+                    "gotmpl",
+                    "json",
+                    "yaml",
+                    "toml",
+                    "markdown",
+                    "markdown_inline",
+                    "dockerfile",
+                    "graphql",
+                    "ini",
+                    "hcl",
+                    "gitignore",
+                    "git_config",
                 },
                 highlight = { enable = true },
                 indent = { enable = true },
@@ -403,7 +559,27 @@ local plugins = {
         "nvim-telescope/telescope-fzf-native.nvim",
         build = "make",
     },
+    -- ── DEBUG JAVA (requiere setup propio, distinto al resto) ───────
+    {
+        "mfussenegger/nvim-jdtls",
+        ft = "java",
+    },
 
+    -- ── DEBUG PYTHON MEJORADO (venv-aware, debug de tests con pytest) ──
+    {
+        "mfussenegger/nvim-dap-python",
+        ft = "python",
+        dependencies = { "mfussenegger/nvim-dap" },
+    },
+
+    -- ── VALORES DE VARIABLES INLINE AL DEBUGGEAR (todos los lenguajes) ──
+    {
+        "theHamsta/nvim-dap-virtual-text",
+        dependencies = { "mfussenegger/nvim-dap", "nvim-treesitter/nvim-treesitter" },
+        opts = {
+            commented = true, -- Muestra los valores como comentario al final de la línea
+        },
+    },
     -- ── 6. DAP DEBUGGER ────────────────────────────────────────────
     {
         "mfussenegger/nvim-dap",
@@ -420,6 +596,66 @@ local plugins = {
             }
             require "configs.dap"
         end,
+    },
+    {
+        "nanotee/sqls.nvim",
+        ft = { "sql", "mysql", "plsql" },
+    },
+    -- ── TODO/FIXME/BUG EN COMENTARIOS (integrado con Trouble) ────────
+    {
+        "folke/todo-comments.nvim",
+        dependencies = { "nvim-lua/plenary.nvim" },
+        event = { "BufReadPost", "BufNewFile" },
+        opts = {
+            signs = true,
+            keywords = {
+                FIX = { icon = " ", color = "error", alt = { "FIXME", "BUG", "FIXIT", "ISSUE" } },
+                TODO = { icon = " ", color = "info" },
+                HACK = { icon = " ", color = "warning" },
+                WARN = { icon = " ", color = "warning", alt = { "WARNING", "XXX" } },
+                PERF = { icon = " ", color = "default", alt = { "OPTIM", "PERFORMANCE", "OPTIMIZE" } },
+                NOTE = { icon = " ", color = "hint", alt = { "INFO" } },
+            },
+        },
+    },
+
+    -- ── NOTA RÁPIDA POR PROYECTO (ventana flotante) ──────────────────
+    {
+        "backdround/global-note.nvim",
+        cmd = { "GlobalNote", "ProjectNote" },
+        opts = {
+            filename = "global.md",
+            directory = vim.fn.stdpath "data" .. "/global-note/",
+            title = "Notas globales",
+            window_config = function()
+                local h = vim.api.nvim_list_uis()[1].height
+                local w = vim.api.nvim_list_uis()[1].width
+                return {
+                    relative = "editor",
+                    border = "rounded",
+                    title = "Notas",
+                    title_pos = "center",
+                    width = math.floor(0.7 * w),
+                    height = math.floor(0.75 * h),
+                    row = math.floor(0.1 * h),
+                    col = math.floor(0.15 * w),
+                }
+            end,
+            autosave = true,
+            additional_presets = {
+                project = {
+                    filename = function()
+                        local git_root =
+                            vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")[1]
+                        local name = git_root and vim.fn.fnamemodify(git_root, ":t") or "sin-proyecto"
+                        return name .. ".md"
+                    end,
+                    directory = vim.fn.stdpath "data" .. "/global-note/projects/",
+                    title = "Notas del proyecto",
+                    command_name = "ProjectNote",
+                },
+            },
+        },
     },
 
     -- ── 10. SQL STAFF & NAVEGADOR DE ESTRUCTURAS ───────────────────

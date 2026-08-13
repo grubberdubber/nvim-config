@@ -1,94 +1,55 @@
 local lint = require "lint"
 
--- ╔══════════════════════════════════════════════════════════════╗
--- ║  LINTING SQL — sqlfluff (dialecto MySQL)                     ║
--- ╚══════════════════════════════════════════════════════════════╝
 lint.linters_by_ft = {
     sql = { "sqlfluff" },
     mysql = { "sqlfluff" },
+    css = { "stylelint" },
+    scss = { "stylelint" },
+    less = { "stylelint" },
+    vue = { "stylelint" },
 }
 
-lint.linters.sqlfluff.args = {
-    "lint",
-    "--dialect",
-    "mysql",
-    "--format",
-    "json",
-    "-",
-}
+-- ── SINCRONIZACIÓN DE ARGUMENTOS (SQLFLUFF) ───────────────────────
+local function sync_sqlfluff_dialect()
+    local dialect = vim.b.sql_dialect or "mysql"
+    lint.linters.sqlfluff.args = { "lint", "--dialect", dialect, "--format", "json", "-" }
+end
 
--- ── FALSOS POSITIVOS CONOCIDOS DE SQLFLUFF ────────────────────────
--- sqlfluff no cubre la gramática completa de los comandos administrativos
--- de MySQL y los reporta como error de parseo (PRS / "Found unparsable
--- section") aunque la sintaxis sea 100% válida. Es una limitación
--- documentada del proyecto (ver issues #1628, #3944, #4885, #5603 en
--- github.com/sqlfluff/sqlfluff), no un bug de esta config.
---
--- Filtramos SOLO estos statements administrativos puntuales.
--- Cualquier otro error real (SELECT/INSERT/UPDATE/DELETE/DDL mal escrito)
--- sigue detectándose sin cambios.
-local admin_keywords = {
-    -- Utility statements
-    "SHOW",
-    "DESCRIBE",
-    "DESC",
-    "USE",
-    "EXPLAIN",
-    "HELP",
+-- ── SINCRONIZACIÓN DE ARGUMENTOS GLOBAL PROFESIONAL (STYLELINT) ───
+local function sync_stylelint()
+    local filepath = vim.api.nvim_buf_get_name(0)
+    if filepath == "" then
+        return
+    end
 
-    -- Table maintenance statements
-    "ANALYZE TABLE",
-    "CHECK TABLE",
-    "CHECKSUM TABLE",
-    "OPTIMIZE TABLE",
-    "REPAIR TABLE",
+    local nvim_dir = vim.fn.stdpath "config"
 
-    -- Account management statements
-    "CREATE USER",
-    "DROP USER",
-    "ALTER USER",
-    "RENAME USER",
-    "CREATE ROLE",
-    "DROP ROLE",
-    "GRANT",
-    "REVOKE",
-    "SET PASSWORD",
-    "SET ROLE",
-    "SET DEFAULT ROLE",
+    lint.linters.stylelint.args = {
+        "-f",
+        "json",
+        "--config",
+        nvim_dir .. "/.stylelintrc.json",
+        "--config-basedir",
+        nvim_dir,
+        "--stdin",
+        "--stdin-filename",
+        filepath,
+    }
+end
 
-    -- Otros statements administrativos
-    "FLUSH",
-    "RESET",
-    "KILL",
-    "SHUTDOWN",
-    "RESTART",
-    "BINLOG",
-    "CACHE INDEX",
-    "LOAD INDEX INTO CACHE",
-    "PURGE BINARY LOGS",
-    "LOCK TABLES",
-    "UNLOCK TABLES",
+-- ── FALSOS POSITIVOS CONOCIDOS DE SQLFLUFF (comandos administrativos) ──
+local keywords_by_dialect = require "configs.sql_admin_keywords"
 
-    -- Plugins y componentes
-    "INSTALL PLUGIN",
-    "UNINSTALL PLUGIN",
-    "INSTALL COMPONENT",
-    "UNINSTALL COMPONENT",
-}
-
--- Envuelve el parser JSON que ya trae nvim-lint para sqlfluff.
--- No lo reemplaza: solo descarta las violaciones PRS que matchean
--- con un statement administrativo conocido.
 local original_parser = lint.linters.sqlfluff.parser
-
 lint.linters.sqlfluff.parser = function(output, bufnr, cmd)
     local diagnostics = original_parser(output, bufnr, cmd)
-    local filtered = {}
+    local dialect = vim.b[bufnr].sql_dialect or "mysql"
+    local admin_keywords = keywords_by_dialect[dialect] or keywords_by_dialect.mysql
 
+    local filtered = {}
     for _, diag in ipairs(diagnostics) do
         local msg = (diag.message or ""):upper()
         local is_admin_false_positive = false
-
         if msg:find("FOUND UNPARSABLE SECTION", 1, true) then
             for _, kw in ipairs(admin_keywords) do
                 if msg:find("'" .. kw, 1, true) then
@@ -97,20 +58,24 @@ lint.linters.sqlfluff.parser = function(output, bufnr, cmd)
                 end
             end
         end
-
         if not is_admin_false_positive then
             table.insert(filtered, diag)
         end
     end
-
     return filtered
 end
 
--- ── AUTOCMD: cuándo se dispara el lint ────────────────────────────
+-- ── EJECUCIÓN CENTRALIZADA ────────────────────────────────────────
+local function lint_sql_aware()
+    sync_sqlfluff_dialect()
+    sync_stylelint()
+    lint.try_lint()
+end
+
 local lint_group = vim.api.nvim_create_augroup("nvim-lint", { clear = true })
 vim.api.nvim_create_autocmd({ "BufWritePost", "BufReadPost", "InsertLeave" }, {
     group = lint_group,
-    callback = function()
-        lint.try_lint()
-    end,
+    callback = lint_sql_aware,
 })
+
+return { lint_sql = lint_sql_aware }

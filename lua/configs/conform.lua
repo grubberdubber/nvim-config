@@ -27,6 +27,13 @@ local options = {
         sh = { "shfmt" },
         ruby = { "rubyfmt" },
 
+        yaml = { "yamlfmt" },
+        json = { "prettier" },
+        jsonc = { "prettier" },
+        toml = { "taplo" },
+        terraform = { "terraform_fmt" },
+        dockerfile = { "prettier" },
+
         -- ── Ciencia de Datos ─────────────────────────────────────────
         r = { "styler" },
         sql = { "sql_formatter", "sqlfluff" },

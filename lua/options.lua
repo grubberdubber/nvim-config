@@ -13,39 +13,58 @@ o.relativenumber = false
 o.cursorline = true
 o.cursorlineopt = "both"
 
--- Centralización de estilos (Corrección de colores y máxima legibilidad)
+-- ── MOTOR DE COLORES INVENCIBLE (Corrige Blink.cmp y Diagnósticos) ──
+local function apply_custom_colors()
+    -- UI Base
+    vim.api.nvim_set_hl(0, "Comment", { fg = "#6272a4", italic = true, bold = false })
+    vim.api.nvim_set_hl(0, "Whitespace", { fg = "#4b5263" })
+    vim.api.nvim_set_hl(0, "NonText", { fg = "#4b5263" })
+
+    -- Paleta para Diagnósticos
+    local err = "#ff7a93"
+    local warn = "#ffc27d"
+    local info = "#78dce8"
+    local hint = "#a9b1d6"
+
+    vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = err, bg = "NONE", bold = true })
+    vim.api.nvim_set_hl(0, "DiagnosticVirtualTextWarn", { fg = warn, bg = "NONE", bold = true })
+    vim.api.nvim_set_hl(0, "DiagnosticVirtualTextInfo", { fg = info, bg = "NONE" })
+    vim.api.nvim_set_hl(0, "DiagnosticVirtualTextHint", { fg = hint, bg = "NONE" })
+
+    vim.api.nvim_set_hl(0, "DiagnosticUnderlineError", { undercurl = true, sp = err })
+    vim.api.nvim_set_hl(0, "DiagnosticUnderlineWarn", { undercurl = true, sp = warn })
+    vim.api.nvim_set_hl(0, "DiagnosticUnderlineInfo", { undercurl = true, sp = info })
+    vim.api.nvim_set_hl(0, "DiagnosticUnderlineHint", { undercurl = true, sp = hint })
+    vim.api.nvim_set_hl(0, "Error", { fg = err, bg = "NONE", bold = true })
+
+    -- Forzar colores de blink.cmp a la paleta de NvChad
+    vim.api.nvim_set_hl(0, "BlinkCmpMenu", { link = "Pmenu", force = true })
+    vim.api.nvim_set_hl(0, "BlinkCmpMenuBorder", { link = "FloatBorder", force = true })
+    vim.api.nvim_set_hl(0, "BlinkCmpMenuSelection", { link = "PmenuSel", force = true })
+    vim.api.nvim_set_hl(0, "BlinkCmpScrollBarThumb", { link = "PmenuThumb", force = true })
+    vim.api.nvim_set_hl(0, "BlinkCmpDoc", { link = "NormalFloat", force = true })
+    vim.api.nvim_set_hl(0, "BlinkCmpDocBorder", { link = "FloatBorder", force = true })
+    vim.api.nvim_set_hl(0, "BlinkCmpLabel", { link = "Pmenu", force = true })
+end
+
+-- 1. Aplicar al iniciar Neovim
+apply_custom_colors()
+
+-- 2. Re-aplicar si cambias de tema manualmente
 vim.api.nvim_create_autocmd("ColorScheme", {
     pattern = "*",
-    callback = function()
-        -- UI Base
-        vim.api.nvim_set_hl(0, "Comment", { fg = "#6272a4", italic = true, bold = false })
-        vim.api.nvim_set_hl(0, "Whitespace", { fg = "#4b5263" })
-        vim.api.nvim_set_hl(0, "NonText", { fg = "#4b5263" })
+    callback = apply_custom_colors,
+})
 
-        -- Paleta clara, vibrante y súper legible para Diagnósticos (Sin grises opacos)
-        local err_color = "#ff7a93" -- Rojo salmón claro y brillante
-        local warn_color = "#ffc27d" -- Amarillo/dorado cálido nítido
-        local info_color = "#78dce8" -- Cyan luminoso
-        local hint_color = "#a9b1d6" -- Gris azulado claro visible
-
-        -- Corrección de texto flotante y virtual (Sin fondos sólidos que tapen código)
-        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = err_color, bg = "NONE", bold = true })
-        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextWarn", { fg = warn_color, bg = "NONE", bold = true })
-        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextInfo", { fg = info_color, bg = "NONE" })
-        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextHint", { fg = hint_color, bg = "NONE" })
-
-        -- Subrayado ondulado fino con los nuevos colores vivos
-        vim.api.nvim_set_hl(0, "DiagnosticUnderlineError", { undercurl = true, sp = err_color })
-        vim.api.nvim_set_hl(0, "DiagnosticUnderlineWarn", { undercurl = true, sp = warn_color })
-        vim.api.nvim_set_hl(0, "DiagnosticUnderlineInfo", { undercurl = true, sp = info_color })
-        vim.api.nvim_set_hl(0, "DiagnosticUnderlineHint", { undercurl = true, sp = hint_color })
-
-        -- Errores puros de sintaxis de Treesitter
-        vim.api.nvim_set_hl(0, "Error", { fg = err_color, bg = "NONE", bold = true })
+-- 3. EL TRUCO: Re-aplicar JUSTO cuando Lazy.nvim despierta a blink.cmp
+vim.api.nvim_create_autocmd("User", {
+    pattern = "LazyLoad",
+    callback = function(args)
+        if args.data == "blink.cmp" then
+            apply_custom_colors()
+        end
     end,
 })
--- Forzar la ejecución de los colores corregidos inmediatamente
-vim.cmd "doautocmd ColorScheme"
 
 -- ── INDENTACIÓN ──────────────────────────────────────────────────
 o.tabstop = 4
@@ -61,17 +80,10 @@ opt.listchars = {
     nbsp = "␣",
 }
 
--- ── DIAGNÓSTICOS (Íconos limpios) ────────────────────────────────
+-- ── DIAGNÓSTICOS (Sin íconos en el margen — solo conteo en statusline) ──
 vim.diagnostic.config {
     virtual_text = { prefix = "● ", spacing = 4 },
-    signs = {
-        text = {
-            [vim.diagnostic.severity.ERROR] = " ",
-            [vim.diagnostic.severity.WARN] = " ",
-            [vim.diagnostic.severity.INFO] = " ",
-            [vim.diagnostic.severity.HINT] = "󰌵 ",
-        },
-    },
+    signs = false,
     underline = true,
     update_in_insert = false,
     severity_sort = true,
@@ -92,7 +104,7 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 o.ignorecase = true
 o.smartcase = true
 o.scrolloff = 8
-o.signcolumn = "yes:1"
+o.signcolumn = "auto:2"
 o.updatetime = 250
 o.timeoutlen = 400
 o.splitbelow = true

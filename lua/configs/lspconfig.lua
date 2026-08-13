@@ -2,7 +2,7 @@ local nvchad_lsp = require "nvchad.configs.lspconfig"
 
 local on_attach = nvchad_lsp.on_attach
 local on_init = nvchad_lsp.on_init
-local capabilities = nvchad_lsp.capabilities
+local capabilities = require("blink.cmp").get_lsp_capabilities(nvchad_lsp.capabilities)
 
 -- ╔══════════════════════════════════════════════════════════════╗
 -- ║  CONFIG BASE PARA TODOS LOS SERVIDORES                       ║
@@ -26,7 +26,6 @@ local servers = {
     "rust_analyzer",
     "gopls",
     "omnisharp",
-    "jdtls",
     "asm_lsp",
     "kotlin_language_server",
     "dartls",
@@ -56,18 +55,27 @@ vim.lsp.config("pyright", {
     },
 })
 
--- ── sqlls: dialecto MySQL, sin diagnostics ────────────────────
--- El parser interno de sql-language-server es demasiado frágil para SQL
--- real (falla con CTEs, window functions, dialectos, multi-statement).
--- Descartamos sus diagnostics por completo en vez de filtrarlos.
-vim.lsp.config("sqlls", {
+-- ── sqls: LSP multi-motor (MySQL, PostgreSQL, SQLite3, MSSQL, H2, Vertica) ──
+vim.lsp.config("sqls", {
+    cmd = { "sqls" },
+    filetypes = { "sql", "mysql", "plsql" },
+    on_attach = function(client, bufnr)
+        require("sqls").on_attach(client, bufnr) -- habilita comandos de sqls (ejecutar query, cambiar conexión)
+    end,
     settings = {
-        sqlLanguageServer = {
-            adapter = "mysql",
+        sqls = {
+            connections = {
+                -- Editá estos con tus credenciales reales, o dejalos de ejemplo
+                -- y usá el comando "Switch Connection" de sqls.nvim para elegir.
+                { driver = "mysql", dataSourceName = "root:root@tcp(127.0.0.1:3306)/dbname" },
+                {
+                    driver = "postgresql",
+                    dataSourceName = "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=dbname sslmode=disable",
+                },
+                { driver = "sqlite3", dataSourceName = "/ruta/a/tu/archivo.sqlite3" },
+                { driver = "mssql", dataSourceName = "sqlserver://usuario:password@127.0.0.1:1433?database=dbname" },
+            },
         },
-    },
-    handlers = {
-        ["textDocument/publishDiagnostics"] = function() end,
     },
 })
 
@@ -78,6 +86,31 @@ vim.lsp.config("lua_ls", {
             diagnostics = { globals = { "vim" } },
             workspace = { checkThirdParty = false },
             telemetry = { enable = false },
+        },
+    },
+})
+
+-- ── yamlls: validación de esquemas (Kubernetes, Docker Compose, GitHub Actions) ──
+vim.lsp.config("yamlls", {
+    settings = {
+        yaml = {
+            schemaStore = { enable = true, url = "https://www.schemastore.org/api/json/catalog.json" },
+            schemas = {
+                ["https://raw.githubusercontent.com/instrumenta/kubernetes-json-schema/master/v1.29.0-standalone-strict/all.json"] = "/*.k8s.yaml",
+                kubernetes = "*.k8s.yaml",
+            },
+            validate = true,
+            format = { enable = true },
+        },
+    },
+})
+
+-- ── jsonls: validación de esquemas vía SchemaStore ──────────────
+vim.lsp.config("jsonls", {
+    settings = {
+        json = {
+            schemas = require("schemastore").json.schemas(),
+            validate = { enable = true },
         },
     },
 })

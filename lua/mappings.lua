@@ -6,15 +6,6 @@ local map = vim.keymap.set
 -- ── BLINDAJE DE TAB: FORCE 4 ESPACIOS (NO IA) ────────────────────
 -- Si el menú de autocompletado normal está abierto, Tab interactúa con él.
 -- Si estás escribiendo un if y sale la IA en gris, Tab mete tus 4 espacios de forma obligatoria.
-map("i", "<Tab>", function()
-    local cmp_status, cmp = pcall(require, "cmp")
-    if cmp_status and cmp.visible() then
-        cmp.select_next_item()
-    else
-        vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, true, true), "n", true)
-    end
-end, { silent = true, desc = "Tab estricto: Prioriza 4 espacios e impide secuestros" })
-
 -- ── CONFIGURACIÓN DE CODEIUM (IA EXCLUSIVA EN CTRL+G) ────────────
 vim.api.nvim_set_hl(0, "CodeiumSuggestion", { fg = "#5c6370", italic = true })
 map("i", "<C-g>", function()
@@ -227,3 +218,235 @@ map("n", "]s", function()
 end, { desc = "Aerial: Símbolo/tabla anterior" })
 
 map("v", "y", '"+y', { desc = "Copiar selección al portapapeles" })
+
+-- ── SCROLL CENTRADO (lento línea a línea, rápido media página) ───
+map("n", "<C-d>", "<C-d>zz", { desc = "Scroll: Media página abajo (centrado)" })
+map("n", "<C-u>", "<C-u>zz", { desc = "Scroll: Media página arriba (centrado)" })
+map("n", "<C-e>", "3<C-e>", { desc = "Scroll: Lento hacia abajo (3 líneas)" })
+map("n", "<C-y>", "3<C-y>", { desc = "Scroll: Lento hacia arriba (3 líneas)" })
+map("n", "n", "nzzzv", { desc = "Búsqueda: Siguiente resultado (centrado)" })
+map("n", "N", "Nzzzv", { desc = "Búsqueda: Anterior resultado (centrado)" })
+
+-- ── REDIMENSIONAR VENTANAS (espacialmente consciente, estilo bspwm) ──
+local function smart_resize(direction)
+    local amount = 3
+    local cur = vim.fn.winnr()
+
+    if direction == "right" then
+        if vim.fn.winnr "l" ~= cur then
+            vim.cmd("vertical resize +" .. amount)
+        elseif vim.fn.winnr "h" ~= cur then
+            vim.cmd("vertical resize -" .. amount)
+        end
+    elseif direction == "left" then
+        if vim.fn.winnr "l" ~= cur then
+            vim.cmd("vertical resize -" .. amount)
+        elseif vim.fn.winnr "h" ~= cur then
+            vim.cmd("vertical resize +" .. amount)
+        end
+    elseif direction == "down" then
+        if vim.fn.winnr "j" ~= cur then
+            vim.cmd("resize +" .. amount)
+        elseif vim.fn.winnr "k" ~= cur then
+            vim.cmd("resize -" .. amount)
+        end
+    elseif direction == "up" then
+        if vim.fn.winnr "j" ~= cur then
+            vim.cmd("resize -" .. amount)
+        elseif vim.fn.winnr "k" ~= cur then
+            vim.cmd("resize +" .. amount)
+        end
+    end
+end
+
+map("n", "<C-Left>", function()
+    smart_resize "left"
+end, { desc = "Ventana: Mover borde a la izquierda" })
+map("n", "<C-Right>", function()
+    smart_resize "right"
+end, { desc = "Ventana: Mover borde a la derecha" })
+map("n", "<C-Up>", function()
+    smart_resize "up"
+end, { desc = "Ventana: Mover borde arriba" })
+map("n", "<C-Down>", function()
+    smart_resize "down"
+end, { desc = "Ventana: Mover borde abajo" })
+
+-- ── TERMINAL EN LAS 4 DIRECCIONES (extiende nvchad.term) ──────────
+-- <A-h> abajo, <A-v> derecha, <A-i> flotante ya vienen de NvChad — no se tocan.
+-- Acá solo agregamos las 2 direcciones que faltaban: izquierda y arriba.
+local function git_cwd()
+    local git_dir = vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")[1]
+    if vim.v.shell_error == 0 and git_dir then
+        return git_dir
+    end
+    return vim.fn.getcwd()
+end
+
+map({ "n", "t" }, "<A-j>", function()
+    require("nvchad.term").toggle { pos = "vsp", id = "leftTerm", cwd = git_cwd() }
+    vim.cmd "wincmd H" -- Envía la terminal recién abierta al borde izquierdo
+end, { desc = "Terminal: Toggle izquierda (raíz del repo)" })
+
+map({ "n", "t" }, "<A-k>", function()
+    require("nvchad.term").toggle { pos = "sp", id = "upTerm", cwd = git_cwd() }
+    vim.cmd "wincmd K" -- Envía la terminal recién abierta al borde superior
+end, { desc = "Terminal: Toggle arriba (raíz del repo)" })
+
+-- ── ABRIR SPLIT DE CÓDIGO EN UNA DIRECCIÓN ESPECÍFICA ─────────────
+map("n", "<leader>wh", "<cmd>leftabove vsplit<CR>", { desc = "Split: Abrir a la izquierda" })
+map("n", "<leader>wl", "<cmd>rightbelow vsplit<CR>", { desc = "Split: Abrir a la derecha" })
+map("n", "<leader>wk", "<cmd>aboveleft split<CR>", { desc = "Split: Abrir arriba" })
+map("n", "<leader>wj", "<cmd>belowright split<CR>", { desc = "Split: Abrir abajo" })
+
+-- ── ESTADO DE NAVEGACIÓN DEL WINBAR (selección pendiente, sin abrir aún) ──
+_G.WinbarNavState = { active = false, mode = nil, index = 1, items = {} }
+
+local function winbar_reset_nav()
+    _G.WinbarNavState = { active = false, mode = nil, index = 1, items = {} }
+end
+
+-- Reinicia la selección pendiente al cambiar de buffer, para no arrastrar
+-- una selección vieja de otro archivo/carpeta.
+vim.api.nvim_create_autocmd("BufEnter", {
+    callback = winbar_reset_nav,
+})
+
+local function get_breadcrumb_items()
+    local full_path = vim.fn.expand "%:p"
+    if full_path == "" then
+        return {}
+    end
+
+    local git_root_list = vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")
+    local root = (vim.v.shell_error == 0 and git_root_list[1] and git_root_list[1] ~= "" and git_root_list[1])
+        or vim.fn.getcwd()
+
+    local rel = full_path
+    if full_path:sub(1, #root) == root then
+        rel = full_path:sub(#root + 2)
+    end
+
+    local items = { { label = vim.fn.fnamemodify(root, ":t"), path = root, is_dir = true } }
+    local accum = root
+    for part in rel:gmatch "[^/]+" do
+        accum = accum .. "/" .. part
+        local is_last = (accum == full_path)
+        table.insert(items, { label = part, path = accum, is_dir = not is_last })
+    end
+    return items
+end
+
+local function get_sibling_file_items()
+    local dir = vim.fn.expand "%:p:h"
+    local files = {}
+    local handle = vim.loop.fs_scandir(dir)
+    if handle then
+        while true do
+            local name, ftype = vim.loop.fs_scandir_next(handle)
+            if not name then
+                break
+            end
+            if ftype == "file" and not name:match "^%." then
+                table.insert(files, name)
+            end
+        end
+    end
+    table.sort(files)
+
+    local items = {}
+    for _, f in ipairs(files) do
+        table.insert(items, { label = f, path = dir .. "/" .. f, is_dir = false })
+    end
+    return items
+end
+
+-- ]f / [f: SOLO mueven la selección (resaltada en otro color), no abren nada.
+local function winbar_nav_move(direction)
+    local mode = vim.g.winbar_mode or "path"
+    local state = _G.WinbarNavState
+
+    if not state.active or state.mode ~= mode then
+        local items = (mode == "files") and get_sibling_file_items() or get_breadcrumb_items()
+        if #items == 0 then
+            return
+        end
+
+        local current_marker = (mode == "files") and vim.fn.expand "%:t" or vim.fn.expand "%:p:h"
+        local start_idx = #items
+        for i, item in ipairs(items) do
+            if item.path == current_marker or item.label == current_marker then
+                start_idx = i
+                break
+            end
+        end
+
+        state.active = true
+        state.mode = mode
+        state.items = items
+        state.index = start_idx
+    end
+
+    state.index = math.max(1, math.min(state.index + direction, #state.items))
+    vim.cmd "redrawstatus!"
+end
+
+-- Enter: SOLO acá se abre lo seleccionado. Sin selección pendiente, Enter
+-- se comporta como siempre (bajar a la primera columna no vacía de abajo).
+local function winbar_nav_confirm()
+    local state = _G.WinbarNavState
+    if not state.active or #state.items == 0 then
+        vim.cmd "normal! +"
+        return
+    end
+
+    local item = state.items[state.index]
+    winbar_reset_nav()
+    vim.cmd "redrawstatus!"
+
+    if item.is_dir then
+        require("oil").open(item.path)
+    else
+        vim.cmd("edit " .. vim.fn.fnameescape(item.path))
+    end
+end
+
+map("n", "]f", function()
+    winbar_nav_move(1)
+end, { desc = "Winbar: Mover selección siguiente (Enter abre)" })
+map("n", "[f", function()
+    winbar_nav_move(-1)
+end, { desc = "Winbar: Mover selección anterior (Enter abre)" })
+map("n", "<CR>", winbar_nav_confirm, { desc = "Winbar: Confirmar selección / Enter normal" })
+
+map("n", "<leader>ww", function()
+    vim.g.winbar_mode = (vim.g.winbar_mode == "path") and "files" or "path"
+    winbar_reset_nav()
+    vim.notify("Winbar: modo " .. vim.g.winbar_mode, vim.log.levels.INFO)
+    vim.cmd "redrawstatus!"
+end, { desc = "Winbar: Alternar modo (ruta / archivos)" })
+
+-- ── DAP-PYTHON: Debug de tests (pytest/unittest) ─────────────────
+map("n", "<leader>dpt", function()
+    require("dap-python").test_method()
+end, { desc = "DAP: Debug método de test (Python)" })
+map("n", "<leader>dpc", function()
+    require("dap-python").test_class()
+end, { desc = "DAP: Debug clase de test (Python)" })
+
+-- ── VISTA PREVIA WEB (LIVE SERVER) ───────────────────────────────
+map("n", "<F4>", "<cmd>LiveServerStart<CR>", { desc = "Web: Iniciar Live Server" })
+map("n", "<S-F4>", "<cmd>LiveServerStop<CR>", { desc = "Web: Detener Live Server" })
+
+-- ── TODO/FIXME: listado y navegación ─────────────────────────────
+map("n", "<leader>ft", "<cmd>Trouble todo toggle<CR>", { desc = "Trouble: Listar TODO/FIXME/BUG del proyecto" })
+map("n", "]t", function()
+    require("todo-comments").jump_next()
+end, { desc = "TODO: Siguiente comentario" })
+map("n", "[t", function()
+    require("todo-comments").jump_prev()
+end, { desc = "TODO: Comentario anterior" })
+
+-- ── NOTAS RÁPIDAS (ventana flotante) ──────────────────────────────
+map("n", "<leader>nn", "<cmd>GlobalNote<CR>", { desc = "Nota: Global (todas las sesiones)" })
+map("n", "<leader>np", "<cmd>ProjectNote<CR>", { desc = "Nota: Del proyecto actual (por carpeta git)" })
