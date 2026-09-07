@@ -38,6 +38,8 @@ local servers = {
     "sqlls",
     "metals",
     "lua_ls",
+    "nim_langserver",
+    "texlab",
 }
 
 -- ── Pyright: análisis avanzado ────────────────────────────────
@@ -53,6 +55,16 @@ vim.lsp.config("pyright", {
             },
         },
     },
+})
+
+-- ── omnisharp: soporte para archivos .cs sueltos (sin .sln/.csproj) ──
+vim.lsp.config("omnisharp", {
+    root_dir = function(bufnr, on_dir)
+        local fname = vim.api.nvim_buf_get_name(bufnr)
+        local root = vim.fs.root(fname, { "*.sln", "*.csproj", ".git" })
+        on_dir(root or vim.fn.fnamemodify(fname, ":h"))
+    end,
+    single_file_support = true,
 })
 
 -- ── sqls: LSP multi-motor (MySQL, PostgreSQL, SQLite3, MSSQL, H2, Vertica) ──
@@ -90,6 +102,21 @@ vim.lsp.config("lua_ls", {
     },
 })
 
+-- ── texlab: LSP de LaTeX (autocompletado de comandos, referencias, build) ──
+vim.lsp.config("texlab", {
+    settings = {
+        texlab = {
+            build = {
+                onSave = true,
+                forwardSearchAfter = true,
+            },
+            forwardSearch = {
+                executable = "zathura",
+                args = { "--synctex-forward", "%l:1:%f", "%p" },
+            },
+        },
+    },
+})
 -- ── yamlls: validación de esquemas (Kubernetes, Docker Compose, GitHub Actions) ──
 vim.lsp.config("yamlls", {
     settings = {
