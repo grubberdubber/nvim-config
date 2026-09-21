@@ -206,9 +206,10 @@ vim.api.nvim_create_autocmd("VimEnter", {
 -- ── AVANTE: bajada automática de modelo Gemini al agotar cuota ──────
 -- Cascada: 3.1 Pro -> 3.7 Flash -> 3.6 Flash -> 3.5 Flash-Lite.
 -- Al detectar un error de cuota/rate-limit, baja un escalón solo.
-local avante_cascade = { "gemini", "gemini_flash37", "gemini_flash36", "gemini_flash_lite" }
+local avante_cascade = { "gemini", "gemini_flash38", "gemini_flash37", "gemini_flash36", "gemini_flash_lite" }
 local avante_cascade_labels = {
     gemini = "Gemini 3.1 Pro",
+    gemini_flash38 = "Gemini 3.8 Flash",
     gemini_flash37 = "Gemini 3.7 Flash",
     gemini_flash36 = "Gemini 3.6 Flash",
     gemini_flash_lite = "Gemini 3.5 Flash-Lite",
@@ -237,3 +238,101 @@ vim.notify = function(msg, level, opts)
     end
     orig_notify_avante(msg, level, opts)
 end
+
+-- ── ENTER E INDENTACIÓN INTELIGENTE EN HTML/XML (estilo VS Code) ────────
+
+local function smart_html_enter()
+    local line = vim.api.nvim_get_current_line()
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local row, col = cursor[1], cursor[2]
+    local before = line:sub(1, col)
+    local after = line:sub(col + 1)
+
+    -- CASO 1: Split inicial entre <tag> y </tag>
+    if before:match ">%s*$" and after:match "^%s*</" then
+        local indent = line:match "^%s*"
+        local sw = vim.fn.shiftwidth()
+        local inner_indent = indent .. string.rep(" ", sw)
+
+        local clean_before = before:gsub("%s+$", "")
+        clean_after = after:gsub("^%s+", "")
+
+        vim.api.nvim_set_current_line(clean_before)
+        vim.api.nvim_buf_set_lines(0, row, row, false, { inner_indent, indent .. clean_after })
+        vim.api.nvim_win_set_cursor(0, { row + 1, #inner_indent })
+        return true
+    end
+
+    -- CASO 2: Múltiples Enter en líneas vacías
+    if line:match "^%s*$" then
+        vim.api.nvim_set_current_line(before)
+        vim.api.nvim_buf_set_lines(0, row, row, false, { before })
+        vim.api.nvim_win_set_cursor(0, { row + 1, #before })
+        return true
+    end
+
+    -- CASO 3: Enter tras etiqueta de apertura suelta (ej. "<section>")
+    if before:match "<[a-zA-Z0-9%-]+[^>]*>$" and not before:match "/>$" then
+        local indent = line:match "^%s*"
+        local sw = vim.fn.shiftwidth()
+        local next_indent = indent .. string.rep(" ", sw)
+
+        vim.api.nvim_set_current_line(before)
+        vim.api.nvim_buf_set_lines(0, row, row, false, { next_indent .. after })
+        vim.api.nvim_win_set_cursor(0, { row + 1, #next_indent })
+        return true
+    end
+
+    return false
+end
+
+-- Backspace matemático por columna (estilo VS Code)
+local function smart_html_bs()
+    local col = vim.fn.col "." - 1 -- Columna actual (0-indexed)
+    local line = vim.api.nvim_get_current_line()
+    local before = line:sub(1, col)
+
+    -- Solo actúa si el cursor está posicionado sobre la sangría inicial
+    if col > 0 and before:match "^%s+$" then
+        local sw = vim.fn.shiftwidth()
+        local target_col
+
+        if col % sw == 0 then
+            target_col = col - sw
+        else
+            target_col = math.floor(col / sw) * sw
+        end
+        if target_col < 0 then
+            target_col = 0
+        end
+
+        local count = col - target_col
+        return string.rep(vim.api.nvim_replace_termcodes("<BS>", true, true, true), count)
+    end
+
+    return vim.api.nvim_replace_termcodes("<BS>", true, true, true)
+end
+
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = { "html", "xml" },
+    callback = function(args)
+        local buf = args.buf
+
+        -- Anular el indenter nativo de Neovim para evitar retrocesos impares
+        vim.bo[buf].indentexpr = ""
+        vim.bo[buf].tabstop = 4
+        vim.bo[buf].shiftwidth = 4
+        vim.bo[buf].softtabstop = 4
+        vim.bo[buf].expandtab = true
+
+        -- Mapeo de Enter
+        vim.keymap.set("i", "<CR>", function()
+            if not smart_html_enter() then
+                vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, true, true), "n", true)
+            end
+        end, { buffer = buf, desc = "Enter inteligente en HTML" })
+
+        -- Mapeo de Backspace alineado a columnas (expr = true)
+        vim.keymap.set("i", "<BS>", smart_html_bs, { expr = true, buffer = buf, desc = "Backspace en columna HTML" })
+    end,
+})

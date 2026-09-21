@@ -67,6 +67,34 @@ vim.lsp.config("omnisharp", {
     single_file_support = true,
 })
 
+-- ── emmet_ls: ampliar cobertura más allá del default (HTML/CSS/JSX/Vue/Svelte) ──
+vim.lsp.config("emmet_ls", {
+    filetypes = {
+        -- Ya vienen por defecto en nvim-lspconfig:
+        "html",
+        "css",
+        "scss",
+        "sass",
+        "less",
+        "javascriptreact",
+        "typescriptreact",
+        "vue",
+        "svelte",
+        "astro",
+        "pug",
+        "eruby",
+        "htmldjango",
+        "htmlangular",
+        "templ",
+        -- Agregados a mano:
+        "xml",
+        "xsl",
+        "stylus",
+        "haml",
+        "slim",
+    },
+})
+
 -- ── sqls: LSP multi-motor (MySQL, PostgreSQL, SQLite3, MSSQL, H2, Vertica) ──
 vim.lsp.config("sqls", {
     cmd = { "sqls" },
