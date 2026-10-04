@@ -2,11 +2,11 @@
 .netrwhist
 *.log
 
-# Caché de temas NvChad (se regenera en cada máquina)
+# Caché de temas NvChad
 /base46/
 
-# Lock de plugins (cada máquina gestiona sus versiones)
+# Lock de plugins (es opcional, pero si prefieres que cada máquina sea independiente, está bien excluirlo)
 lazy-lock.json
 
-# Conexiones guardadas de Dadbod (pueden tener credenciales)
+# Conexiones guardadas de Dadbod
 /db_ui/
