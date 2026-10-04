@@ -5,8 +5,18 @@
 # Caché de temas NvChad
 /base46/
 
-# Lock de plugins (es opcional, pero si prefieres que cada máquina sea independiente, está bien excluirlo)
-lazy-lock.json
-
 # Conexiones guardadas de Dadbod
 /db_ui/
+
+# Neovim local data
+/shada/
+/undo/
+
+# Entornos virtuales (MUY IMPORTANTE)
+.venv/
+env/
+venv/
+__pycache__/
+
+# Archivos de sistema
+.DS_Store
