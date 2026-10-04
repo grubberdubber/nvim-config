@@ -67,6 +67,14 @@ local plugins = {
         end,
     },
 
+    {
+        "HiPhish/rainbow-delimiters.nvim",
+        event = "User FilePost", -- Carga inteligente solo cuando abres un archivo con código
+        config = function()
+            -- Usamos la configuración por defecto, que es excelente
+            require("rainbow-delimiters.setup").setup()
+        end,
+    },
     -- ── 2. COLOR PICKER PARA CSS ───────────────────────────────────
     {
         "uga-rosa/ccc.nvim",
@@ -881,10 +889,14 @@ local plugins = {
             providers = {
                 gemini = {
                     endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-                    model = "gemini-3.1-pro",
+                    model = "gemini-3.1-pro-preview",
                     timeout = 30000,
                     context_window = 1048576,
                     extra_request_body = { generationConfig = { temperature = 0.3 } },
+                },
+                gemini_flash38 = {
+                    __inherited_from = "gemini",
+                    model = "gemini-3.8-flash",
                 },
                 gemini_flash37 = {
                     __inherited_from = "gemini",

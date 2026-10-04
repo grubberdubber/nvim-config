@@ -73,14 +73,28 @@ return {
         accept = {
             auto_brackets = { enabled = true },
         },
+        trigger = {
+            show_on_trigger_character = true,
+            show_on_blocked_trigger_characters = {}, -- no bloquear ningún disparador (afecta a Emmet)
+        },
     },
 
     sources = {
         default = { "lsp", "path", "snippets", "buffer", "dadbod" },
+        min_keyword_length = 0,
         providers = {
             dadbod = {
                 name = "Dadbod",
                 module = "vim_dadbod_completion.blink",
+            },
+            lsp = {
+                override = {
+                    get_trigger_characters = function(self)
+                        local chars = self:get_trigger_characters()
+                        vim.list_extend(chars, { "!", ">", ".", "#", "*", "+", ":", "{", "}", "[", "]", "(", ")" })
+                        return chars
+                    end,
+                },
             },
         },
     },

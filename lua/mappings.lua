@@ -501,9 +501,10 @@ map("n", "<leader>lc", "<cmd>VimtexClean<CR>", { desc = "LaTeX: Limpiar auxiliar
 map("n", "<leader>ag", function()
     local models = {
         { label = "Gemini 3.1 Pro (más potente)", provider = "gemini", idx = 1 },
-        { label = "Gemini 3.7 Flash", provider = "gemini_flash37", idx = 2 },
-        { label = "Gemini 3.6 Flash", provider = "gemini_flash36", idx = 3 },
-        { label = "Gemini 3.5 Flash-Lite (más rápido/económico)", provider = "gemini_flash_lite", idx = 4 },
+        { label = "Gemini 3.8 Flash", provider = "gemini_flash38", idx = 2 },
+        { label = "Gemini 3.7 Flash", provider = "gemini_flash37", idx = 3 },
+        { label = "Gemini 3.6 Flash", provider = "gemini_flash36", idx = 4 },
+        { label = "Gemini 3.5 Flash-Lite (más rápido/económico)", provider = "gemini_flash_lite", idx = 5 },
     }
     vim.ui.select(models, {
         prompt = "Cambiar modelo de Avante:",

@@ -2,7 +2,7 @@
 local M = {}
 
 M.base46 = {
-    theme = "cyberkali", -- Cambia automáticamente con tu selector de temas
+    theme = "fluorodark", -- Cambia automáticamente con tu selector de temas
     hl_override = {
         WinBar = { bg = "NONE" },
         WinBarNC = { bg = "NONE" },
@@ -58,6 +58,15 @@ M.base46 = {
         BlinkCmpKindEvent = { link = "Special" },
         BlinkCmpKindOperator = { link = "Operator" },
         BlinkCmpKindTypeParameter = { link = "Type" },
+
+        -- ── RAINBOW DELIMITERS (Adaptable automáticamente a cualquier tema) ──
+        RainbowDelimiterRed = { link = "Keyword" }, -- Tomará el color de las palabras clave
+        RainbowDelimiterYellow = { link = "Type" }, -- Tomará el color de las clases/tipos
+        RainbowDelimiterBlue = { link = "Function" }, -- Tomará el color de las funciones
+        RainbowDelimiterOrange = { link = "Constant" }, -- Tomará el color de las constantes
+        RainbowDelimiterGreen = { link = "String" }, -- Tomará el color de los textos
+        RainbowDelimiterViolet = { link = "Statement" }, -- Tomará el color de las declaraciones
+        RainbowDelimiterCyan = { link = "Special" }, -- Tomará el color de los caracteres especiales
     },
 }
 
