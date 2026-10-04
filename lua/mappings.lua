@@ -83,6 +83,10 @@ end, { desc = "Iron: Enviar bloque al REPL" })
 
 map("n", "<leader>db", "<cmd>DBUIToggle<CR>", { desc = "DB: Toggle UI base de datos" })
 
+-- ── EJECUCIÓN DE QUERIES SQL (DADBOD) ────────────────────────────
+map("n", "<leader>dq", "<cmd>%DB<CR>", { desc = "DB: Ejecutar buffer completo" })
+map("v", "<leader>dq", ":'<,'>DB<CR>", { desc = "DB: Ejecutar selección" })
+
 -- Trouble
 map("n", "<leader>tx", "<cmd>Trouble diagnostics toggle<CR>", { desc = "Trouble: Toggle panel" })
 map("n", "<leader>tw", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", { desc = "Trouble: Workspace" })
@@ -191,3 +195,35 @@ map("t", "<leader>q", "<C-\\><C-n><cmd>quit<CR>", { desc = "Terminal: Cerrar ven
 
 -- Cerrar todo excepto la ventana actual
 map("n", "<leader>Q", "<cmd>only<CR>", { desc = "Cerrar todas las demás ventanas" })
+
+-- ── NAVEGADOR DE ESTRUCTURAS DE CÓDIGO Y SQL (AERIAL) ────────────
+local aerial_excluded_ft = { sql = true, mysql = true, plsql = true }
+
+map("n", "<leader>o", function()
+    if aerial_excluded_ft[vim.bo.filetype] then
+        vim.notify("Aerial no soporta outline en SQL (bug del backend LSP/Treesitter).", vim.log.levels.WARN)
+        return
+    end
+    local ok, aerial = pcall(require, "aerial")
+    if ok then
+        aerial.toggle()
+    else
+        vim.notify("Aerial no está descargado. Abre :Lazy y presiona 'I' para instalarlo.", vim.log.levels.ERROR)
+    end
+end, { desc = "Aerial: Toggle árbol de tablas y símbolos" })
+
+map("n", "[s", function()
+    local ok, aerial = pcall(require, "aerial")
+    if ok then
+        aerial.prev()
+    end
+end, { desc = "Aerial: Siguiente símbolo/tabla" })
+
+map("n", "]s", function()
+    local ok, aerial = pcall(require, "aerial")
+    if ok then
+        aerial.next()
+    end
+end, { desc = "Aerial: Símbolo/tabla anterior" })
+
+map("v", "y", '"+y', { desc = "Copiar selección al portapapeles" })

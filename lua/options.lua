@@ -13,28 +13,28 @@ o.relativenumber = false
 o.cursorline = true
 o.cursorlineopt = "both"
 
--- Centralización de estilos (Corrección de colores fosforescentes)
+-- Centralización de estilos (Corrección de colores y máxima legibilidad)
 vim.api.nvim_create_autocmd("ColorScheme", {
     pattern = "*",
     callback = function()
-        -- UI Base (Borramos el CursorLineNr naranja, dejamos que el tema decida)
-        vim.api.nvim_set_hl(0, "Comment", { fg = "#5c6370", italic = true, bold = false })
+        -- UI Base
+        vim.api.nvim_set_hl(0, "Comment", { fg = "#6272a4", italic = true, bold = false })
         vim.api.nvim_set_hl(0, "Whitespace", { fg = "#4b5263" })
         vim.api.nvim_set_hl(0, "NonText", { fg = "#4b5263" })
 
-        -- Paleta sutil para Diagnósticos de errores / advertencias
-        local err_color = "#e06c75" -- Rojo suave
-        local warn_color = "#e5c07b" -- Amarillo/Naranja opaco elegante
-        local info_color = "#56b6c2" -- Cyan limpio
-        local hint_color = "#5c6370" -- Gris para pistas
+        -- Paleta clara, vibrante y súper legible para Diagnósticos (Sin grises opacos)
+        local err_color = "#ff7a93" -- Rojo salmón claro y brillante
+        local warn_color = "#ffc27d" -- Amarillo/dorado cálido nítido
+        local info_color = "#78dce8" -- Cyan luminoso
+        local hint_color = "#a9b1d6" -- Gris azulado claro visible
 
-        -- Corrección de texto flotante (Sin fondos sólidos que tapen código)
-        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = err_color, bg = "NONE" })
-        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextWarn", { fg = warn_color, bg = "NONE" })
+        -- Corrección de texto flotante y virtual (Sin fondos sólidos que tapen código)
+        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextError", { fg = err_color, bg = "NONE", bold = true })
+        vim.api.nvim_set_hl(0, "DiagnosticVirtualTextWarn", { fg = warn_color, bg = "NONE", bold = true })
         vim.api.nvim_set_hl(0, "DiagnosticVirtualTextInfo", { fg = info_color, bg = "NONE" })
         vim.api.nvim_set_hl(0, "DiagnosticVirtualTextHint", { fg = hint_color, bg = "NONE" })
 
-        -- Subrayado ondulado fino para errores
+        -- Subrayado ondulado fino con los nuevos colores vivos
         vim.api.nvim_set_hl(0, "DiagnosticUnderlineError", { undercurl = true, sp = err_color })
         vim.api.nvim_set_hl(0, "DiagnosticUnderlineWarn", { undercurl = true, sp = warn_color })
         vim.api.nvim_set_hl(0, "DiagnosticUnderlineInfo", { undercurl = true, sp = info_color })
@@ -97,10 +97,7 @@ o.updatetime = 250
 o.timeoutlen = 400
 o.splitbelow = true
 o.splitright = true
-opt.clipboard = "unnamedplus"
+opt.clipboard = ""
 o.undofile = true
 opt.fileformats = { "unix", "dos" }
 opt.cmdheight = 1 -- Evita que la barra tape el código generando un pequeño margen
-
--- Barra superior flotante (Nombre del archivo - Nombre del proyecto)
-vim.opt.winbar = "%=%#St_file_txt# %t %#St_lspTxt# ─ %{fnamemodify(getcwd(), ':t')} %="
