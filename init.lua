@@ -75,7 +75,6 @@ require("lazy").setup({
                 "optwin",
                 "compiler",
                 "bugreport",
-                "ftplugin",
             },
         },
     },
@@ -130,3 +129,12 @@ require "autocmds"
 vim.schedule(function()
     require "mappings"
 end)
+
+-- ── AUTO-INSTALACIÓN DE DEPENDENCIAS DE LINTERS (STYLELINT) ──────
+local nvim_dir = vim.fn.stdpath "config"
+local node_modules = nvim_dir .. "/node_modules"
+
+if vim.fn.isdirectory(node_modules) == 0 then
+    vim.notify("Instalando dependencias de linters en ~/.config/nvim...", vim.log.levels.INFO)
+    vim.fn.jobstart({ "npm", "install" }, { cwd = nvim_dir })
+end

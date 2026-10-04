@@ -11,21 +11,10 @@ end
 -- 1. CONFIGURACIÓN DE LA UI
 dapui.setup {
     controls = {
-        enabled = true,
-        icons = {
-            pause = "⏸",
-            play = "▶",
-            step_into = "⏎",
-            step_over = "⏭",
-            step_out = "⏮",
-            step_back = "b",
-            run_last = "▶▶",
-            terminate = "⏹",
-            disconnect = "⏏",
-        },
+        enabled = false, -- Bug conocido de dapui: crashea si togglés sin sesión activa.
+        -- Usá F5/F9/F10/F11/F12/<S-F5> (ya mapeados) en vez de los botones clicables.
     },
 }
-
 -- 2. AUTO-OPEN BLINDADO
 dap.listeners.after.event_initialized["dapui_config"] = function()
     dapui.open()
@@ -124,3 +113,21 @@ dap.configurations.rust = {
 dap.configurations.go = {
     { type = "delve", name = "Debug", request = "launch", program = "${file}" },
 }
+
+-- ── DAP-PYTHON: config mejorada, venv-aware, debug de tests ──────
+local ok_dap_python, dap_python = pcall(require, "dap-python")
+if ok_dap_python then
+    dap_python.setup(get_python_path())
+    -- Esto AGREGA configuraciones nuevas a dap.configurations.python
+    -- (no reemplaza la tuya de "Lanzar archivo actual"): incluye debug
+    -- de módulo, con argumentos, y attach remoto.
+end
+
+-- ── VALORES DE VARIABLES INLINE AL DEBUGGEAR ─────────────────────
+local ok_virtual_text, dap_virtual_text = pcall(require, "nvim-dap-virtual-text")
+if ok_virtual_text then
+    dap_virtual_text.setup {
+        commented = true,
+        virt_text_pos = "eol",
+    }
+end
