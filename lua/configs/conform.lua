@@ -7,13 +7,14 @@ local options = {
         html = { "prettier" },
         css = { "prettier" },
         php = { "php_cs_fixer" },
+        markdown = { "prettier" },
 
         -- ── Sistemas y Compilados ────────────────────────────────────
         python = { "black" },
         rust = { "rustfmt" },
         c = { "clang_format" },
         cpp = { "clang_format" },
-        java = { "google_java_format" },
+        java = { "google-java-format" },
         go = { "gofmt" }, -- viene con Go del sistema, no Mason
 
         -- ── Ecosistema Móvil ─────────────────────────────────────────
@@ -43,8 +44,8 @@ local options = {
 
     -- Formatea al guardar sin bloquear el editor
     format_on_save = {
-        timeout_ms = 500,
-        lsp_fallback = true, -- si no hay formateador local, usa el del LSP
+        timeout_ms = 1500,
+        lsp_format = "fallback", -- si no hay formateador local, usa el del LSP
     },
 }
 

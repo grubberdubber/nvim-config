@@ -47,17 +47,6 @@ local plugins = {
         cmd = { "DiffviewOpen", "DiffviewFileHistory" },
         opts = {},
     },
-    {
-        "NeogitOrg/neogit",
-        dependencies = {
-            "nvim-lua/plenary.nvim",
-            "sindrets/diffview.nvim",
-        },
-        cmd = "Neogit",
-        opts = {
-            integrations = { diffview = true },
-        },
-    },
 
     {
         "mfussenegger/nvim-lint",
@@ -213,15 +202,6 @@ local plugins = {
         end,
     },
 
-    -- ── 4. BÚSQUEDA Y REEMPLAZO GLOBAL (Spectre) ───────────────────
-    {
-        "nvim-pack/nvim-spectre",
-        cmd = "Spectre",
-        keys = {
-            { "<leader>S", '<cmd>lua require("spectre").toggle()<CR>', desc = "Buscar y reemplazar globalmente" },
-        },
-    },
-
     -- ── 5. MASON Y LSPs ────────────────────────────────────────────
     {
         "williamboman/mason.nvim",
@@ -246,6 +226,8 @@ local plugins = {
                 "java-debug-adapter",
                 "java-test",
                 "stylelint",
+                "markdownlint-cli2",
+                "marksman",
             }
             local ok, mr = pcall(require, "mason-registry")
             if not ok then

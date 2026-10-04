@@ -3,9 +3,6 @@ require "nvchad.mappings"
 
 local map = vim.keymap.set
 
--- ── BLINDAJE DE TAB: FORCE 4 ESPACIOS (NO IA) ────────────────────
--- Si el menú de autocompletado normal está abierto, Tab interactúa con él.
--- Si estás escribiendo un if y sale la IA en gris, Tab mete tus 4 espacios de forma obligatoria.
 -- ── CONFIGURACIÓN DE CODEIUM (IA EXCLUSIVA EN CTRL+G) ────────────
 vim.api.nvim_set_hl(0, "CodeiumSuggestion", { fg = "#5c6370", italic = true })
 map("i", "<C-g>", function()
@@ -22,8 +19,12 @@ map("n", "<C-s>", "<cmd>w<CR>", { desc = "Guardar archivo" })
 map("i", "<C-s>", "<ESC><cmd>w<CR>", { desc = "Guardar desde Insert" })
 map("n", "<C-q>", "<cmd>q<CR>", { desc = "Cerrar ventana" })
 
-map("n", "j", "gj", { desc = "Bajar (wrap-aware)" })
-map("n", "k", "gk", { desc = "Subir (wrap-aware)" })
+-- j/k "wrap-aware" que RESPETA los conteos (5j, 10k siguen funcionando
+-- como movimiento real de línea; sin conteo, se mueven por línea de
+-- pantalla — arregla el bug clásico de mapear gj/gk a secas).
+map("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, desc = "Bajar (wrap-aware, respeta conteo)" })
+map("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, desc = "Subir (wrap-aware, respeta conteo)" })
+
 map("v", "<A-j>", ":m '>+1<CR>gv=gv", { desc = "Mover selección abajo" })
 map("v", "<A-k>", ":m '<-2<CR>gv=gv", { desc = "Mover selección arriba" })
 map("n", "<A-j>", ":m .+1<CR>==", { desc = "Mover línea abajo" })
@@ -31,7 +32,6 @@ map("n", "<A-k>", ":m .-2<CR>==", { desc = "Mover línea arriba" })
 map("v", "<", "<gv", { desc = "Indentar izquierda" })
 map("v", ">", ">gv", { desc = "Indentar derecha" })
 map("v", "p", '"_dP', { desc = "Pegar sin perder registro" })
-map("n", "<Esc>", "<cmd>noh<CR>", { desc = "Limpiar highlight de búsqueda" })
 
 map("n", "<C-h>", "<C-w>h", { desc = "Ir a split izquierdo" })
 map("n", "<C-l>", "<C-w>l", { desc = "Ir a split derecho" })
@@ -54,6 +54,19 @@ map("n", "<leader>lf", vim.lsp.buf.format, { desc = "LSP: Formatear archivo" })
 map("n", "[d", vim.diagnostic.goto_prev, { desc = "LSP: Diagnóstico anterior" })
 map("n", "]d", vim.diagnostic.goto_next, { desc = "LSP: Diagnóstico siguiente" })
 map("n", "<leader>df", vim.diagnostic.open_float, { desc = "LSP: Ver diagnóstico flotante" })
+
+-- ── SÍMBOLOS DEL PROYECTO (Telescope + LSP) ──────────────────────
+map("n", "<leader>ss", "<cmd>Telescope lsp_document_symbols<CR>", { desc = "Telescope: Símbolos del archivo actual" })
+map(
+    "n",
+    "<leader>sS",
+    "<cmd>Telescope lsp_workspace_symbols<CR>",
+    { desc = "Telescope: Símbolos de todo el proyecto" }
+)
+
+-- ── QUICKFIX (resultados de :grep, Spectre, etc.) ────────────────
+map("n", "]q", "<cmd>cnext<CR>zz", { desc = "Quickfix: Siguiente resultado" })
+map("n", "[q", "<cmd>cprev<CR>zz", { desc = "Quickfix: Resultado anterior" })
 
 -- ── PLUGINS VARIOS ───────────────────────────────────────────────
 map("n", "<leader>sr", "<cmd>SnipRun<CR>", { desc = "Sniprun: Ejecutar línea" })
@@ -145,10 +158,11 @@ end, { desc = "Harpoon: Saltar al archivo 4" })
 -- ── ETIQUETAS DE AUDITORÍA (TODO COMMENTS) ─────────────────────
 map("n", "]t", function()
     require("todo-comments").jump_next()
-end, { desc = "Saltar al siguiente TODO/FIXME" })
+end, { desc = "TODO: Siguiente comentario" })
 map("n", "[t", function()
     require("todo-comments").jump_prev()
-end, { desc = "Saltar al anterior TODO/FIXME" })
+end, { desc = "TODO: Comentario anterior" })
+map("n", "<leader>ft", "<cmd>Trouble todo toggle<CR>", { desc = "Trouble: Listar TODO/FIXME/BUG del proyecto" })
 
 -- ── RENOMBRADO RÁPIDO DEL ARCHIVO ACTUAL ─────────────────────────
 map("n", "<leader>rf", function()
@@ -208,14 +222,14 @@ map("n", "[s", function()
     if ok then
         aerial.prev()
     end
-end, { desc = "Aerial: Siguiente símbolo/tabla" })
+end, { desc = "Aerial: Símbolo/tabla anterior" })
 
 map("n", "]s", function()
     local ok, aerial = pcall(require, "aerial")
     if ok then
         aerial.next()
     end
-end, { desc = "Aerial: Símbolo/tabla anterior" })
+end, { desc = "Aerial: Siguiente símbolo/tabla" })
 
 map("v", "y", '"+y', { desc = "Copiar selección al portapapeles" })
 
@@ -438,15 +452,6 @@ end, { desc = "DAP: Debug clase de test (Python)" })
 map("n", "<F4>", "<cmd>LiveServerStart<CR>", { desc = "Web: Iniciar Live Server" })
 map("n", "<S-F4>", "<cmd>LiveServerStop<CR>", { desc = "Web: Detener Live Server" })
 
--- ── TODO/FIXME: listado y navegación ─────────────────────────────
-map("n", "<leader>ft", "<cmd>Trouble todo toggle<CR>", { desc = "Trouble: Listar TODO/FIXME/BUG del proyecto" })
-map("n", "]t", function()
-    require("todo-comments").jump_next()
-end, { desc = "TODO: Siguiente comentario" })
-map("n", "[t", function()
-    require("todo-comments").jump_prev()
-end, { desc = "TODO: Comentario anterior" })
-
 -- ── NOTAS RÁPIDAS (ventana flotante) ──────────────────────────────
 map("n", "<leader>nn", "<cmd>GlobalNote<CR>", { desc = "Nota: Global (todas las sesiones)" })
 map("n", "<leader>np", "<cmd>ProjectNote<CR>", { desc = "Nota: Del proyecto actual (por carpeta git)" })
@@ -482,13 +487,18 @@ end, { desc = "MultiCursor: Agregar cursor arriba" })
 map({ "n", "v" }, "<C-A-n>", function()
     mc.matchAddCursor(1)
 end, { desc = "MultiCursor: Agregar cursor en siguiente coincidencia" })
+
+-- <Esc> unificado: limpia el resaltado de búsqueda Y maneja MultiCursor
+-- (antes estaban duplicados en dos mapeos distintos; el segundo pisaba
+-- al primero en silencio y "noh" había dejado de funcionar).
 map("n", "<Esc>", function()
+    vim.cmd "noh"
     if not mc.cursorsEnabled() then
         mc.enableCursors()
     else
         mc.clearCursors()
     end
-end, { desc = "MultiCursor: Limpiar cursores / Esc normal" })
+end, { desc = "Limpiar búsqueda / MultiCursor" })
 
 -- ── MODO ZEN ──────────────────────────────────────────────────────
 map("n", "<leader>zz", "<cmd>ZenMode<CR>", { desc = "Zen: Modo foco" })
@@ -498,6 +508,7 @@ map("n", "<leader>ll", "<cmd>VimtexCompile<CR>", { desc = "LaTeX: Compilar (cont
 map("n", "<leader>lv", "<cmd>VimtexView<CR>", { desc = "LaTeX: Ver PDF" })
 map("n", "<leader>lc", "<cmd>VimtexClean<CR>", { desc = "LaTeX: Limpiar auxiliares" })
 
+-- ── AVANTE (IA con Gemini) ────────────────────────────────────────
 map("n", "<leader>ag", function()
     local models = {
         { label = "Gemini 3.1 Pro (más potente)", provider = "gemini", idx = 1 },
@@ -525,3 +536,30 @@ map("n", "<leader>aR", function()
     _G.AvanteCascadeIndex = 1
     vim.notify("Avante: reseteado a Gemini 3.1 Pro", vim.log.levels.INFO)
 end, { desc = "Avante: Resetear al modelo más potente" })
+
+-- ── TOGGLES DE UI (spell, wrap, numeración, diagnostics) ──────────
+-- Convención "<leader>u" para toggles de interfaz — estándar reconocible
+-- en configs profesionales (LazyVim usa el mismo prefijo para esto).
+map("n", "<leader>us", "<cmd>set spell!<CR>", { desc = "UI: Toggle corrector ortográfico" })
+map("n", "<leader>uw", "<cmd>set wrap!<CR>", { desc = "UI: Toggle ajuste de línea (wrap)" })
+map("n", "<leader>un", function()
+    vim.wo.number = not vim.wo.number
+    vim.wo.relativenumber = not vim.wo.relativenumber
+end, { desc = "UI: Toggle numeración (útil al compartir pantalla)" })
+map("n", "<leader>ud", function()
+    vim.diagnostic.enable(not vim.diagnostic.is_enabled())
+end, { desc = "UI: Toggle diagnostics visibles" })
+
+-- ── SESIONES (persistence.nvim) ───────────────────────────────────
+map("n", "<leader>Ps", function()
+    require("persistence").load()
+end, { desc = "Sesión: Restaurar la de este directorio" })
+map("n", "<leader>Pl", function()
+    require("persistence").load { last = true }
+end, { desc = "Sesión: Restaurar la última guardada" })
+map("n", "<leader>Pd", function()
+    require("persistence").stop()
+end, { desc = "Sesión: No guardar al salir" })
+
+-- ── YANK RÁPIDO DE TODO EL ARCHIVO ────────────────────────────────
+map("n", "<leader>Y", ":%y+<CR>", { desc = "Yank: Todo el buffer al portapapeles" })

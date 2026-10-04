@@ -7,6 +7,7 @@ lint.linters_by_ft = {
     scss = { "stylelint" },
     less = { "stylelint" },
     vue = { "stylelint" },
+    markdown = { "markdownlint-cli2" },
 }
 
 -- ── SINCRONIZACIÓN DE ARGUMENTOS (SQLFLUFF) ───────────────────────

@@ -40,6 +40,7 @@ local servers = {
     "lua_ls",
     "nim_langserver",
     "texlab",
+    "marksman",
 }
 
 -- ── Pyright: análisis avanzado ────────────────────────────────

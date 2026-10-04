@@ -336,3 +336,157 @@ vim.api.nvim_create_autocmd("FileType", {
         vim.keymap.set("i", "<BS>", smart_html_bs, { expr = true, buffer = buf, desc = "Backspace en columna HTML" })
     end,
 })
+
+-- ── RAINBOW-DELIMITERS EN LA DOCUMENTACIÓN DE BLINK.CMP ───────────
+-- Blink pinta esa ventana con extmarks propios (sin parser en el buffer),
+-- por eso rainbow-delimiters no la alcanza. Se envuelve su función de
+-- resaltado y se pintan los delimitadores encima, con los mismos grupos
+-- RainbowDelimiter* que ya enlazas a tu tema en chadrc.lua.
+local function patch_blink_docs_rainbow()
+    local ok, docs = pcall(require, "blink.cmp.lib.window.docs")
+    if not ok or docs._rainbow_patched then
+        return
+    end
+    docs._rainbow_patched = true
+
+    local ns = vim.api.nvim_create_namespace "blink_docs_rainbow"
+    local groups = {
+        "RainbowDelimiterRed",
+        "RainbowDelimiterYellow",
+        "RainbowDelimiterBlue",
+        "RainbowDelimiterOrange",
+        "RainbowDelimiterGreen",
+        "RainbowDelimiterViolet",
+        "RainbowDelimiterCyan",
+    }
+    local priority = 400
+    local original = docs.highlight_with_treesitter
+
+    docs.highlight_with_treesitter = function(bufnr, filetype, start_line, end_line)
+        original(bufnr, filetype, start_line, end_line)
+        pcall(function()
+            if start_line == 0 then
+                vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+            else
+                vim.api.nvim_buf_clear_namespace(bufnr, ns, start_line, end_line)
+            end
+
+            local lang = vim.treesitter.language.get_lang(filetype)
+            if not lang or lang == "markdown" then
+                return
+            end
+            -- La doc de ts_ls viene con tipos (x?: number): parsear como TypeScript
+            if lang == "javascript" then
+                local ok_ts, q = pcall(vim.treesitter.query.get, "typescript", "rainbow-delimiters")
+                if ok_ts and q then
+                    lang = "typescript"
+                end
+            end
+            local query = vim.treesitter.query.get(lang, "rainbow-delimiters")
+            if not query then
+                return
+            end
+
+            local lines = vim.api.nvim_buf_get_lines(bufnr, start_line, end_line, false)
+            local src = table.concat(lines, "\n")
+            local parser = vim.treesitter.get_string_parser(src, lang)
+            local root = parser:parse()[1]:root()
+
+            -- En Neovim 0.11 cada captura llega como lista de nodos:
+            -- "(" y ")" vienen juntos en @delimiter.
+            local containers, matches = {}, {}
+            for _, match in query:iter_matches(root, src, 0, -1) do
+                local m = { delimiters = {} }
+                for id, nodes in pairs(match) do
+                    local name = query.captures[id]
+                    if type(nodes) ~= "table" then
+                        nodes = { nodes }
+                    end
+                    if name == "container" then
+                        m.container = nodes[1]
+                        containers[nodes[1]:id()] = true
+                    elseif name == "delimiter" then
+                        for _, n in ipairs(nodes) do
+                            table.insert(m.delimiters, n)
+                        end
+                    end
+                end
+                table.insert(matches, m)
+            end
+
+            for _, m in ipairs(matches) do
+                if m.container then
+                    local level, p = 0, m.container:parent()
+                    while p do
+                        if containers[p:id()] then
+                            level = level + 1
+                        end
+                        p = p:parent()
+                    end
+                    local group = groups[level % #groups + 1]
+                    for _, d in ipairs(m.delimiters) do
+                        local sr, sc, er, ec = d:range()
+                        vim.api.nvim_buf_set_extmark(bufnr, ns, start_line + sr, sc, {
+                            end_row = start_line + er,
+                            end_col = ec,
+                            hl_group = group,
+                            priority = priority,
+                        })
+                    end
+                end
+            end
+        end)
+    end
+end
+
+vim.api.nvim_create_autocmd("InsertEnter", {
+    once = true,
+    callback = patch_blink_docs_rainbow,
+})
+
+-- ── CERRAR VENTANAS AUXILIARES CON q ──────────────────────────────
+local close_cmds = {
+    NvimTree = "NvimTreeClose",
+    aerial = "AerialClose",
+    Avante = "AvanteToggle",
+    AvanteInput = "AvanteToggle",
+    AvanteSelectedFiles = "AvanteToggle",
+    DiffviewFiles = "DiffviewClose",
+    DiffviewFileHistory = "DiffviewClose",
+}
+local close_plain = { "trouble", "grug-far", "qf", "help", "man", "checkhealth", "dbui", "oil" }
+
+local patterns = { "TelescopePrompt" }
+vim.list_extend(patterns, close_plain)
+for ft in pairs(close_cmds) do
+    table.insert(patterns, ft)
+end
+
+vim.api.nvim_create_autocmd("FileType", {
+    group = vim.api.nvim_create_augroup("CloseAuxWithQ", { clear = true }),
+    pattern = patterns,
+    callback = function(args)
+        local buf, ft = args.buf, args.match
+        -- schedule: que nuestro mapeo se aplique después del que ponga cada plugin
+        vim.schedule(function()
+            if not vim.api.nvim_buf_is_valid(buf) then
+                return
+            end
+            local rhs
+            if ft == "TelescopePrompt" then
+                rhs = function()
+                    require("telescope.actions").close(buf)
+                end
+            elseif close_cmds[ft] then
+                rhs = function()
+                    pcall(vim.cmd, close_cmds[ft])
+                end
+            else
+                rhs = function()
+                    pcall(vim.cmd, "close")
+                end
+            end
+            vim.keymap.set("n", "q", rhs, { buffer = buf, nowait = true, silent = true, desc = "Cerrar ventana" })
+        end)
+    end,
+})

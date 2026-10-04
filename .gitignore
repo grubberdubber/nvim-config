@@ -1,22 +1,37 @@
-# Cachés y temporales de Neovim
+# Neovim caches and temp files
 .netrwhist
 *.log
+*.swp
+*.swo
+*~
 
-# Caché de temas NvChad
+# NvChad theme cache
 /base46/
 
-# Conexiones guardadas de Dadbod
+# Saved Dadbod connections (may contain credentials)
 /db_ui/
 
 # Neovim local data
 /shada/
 /undo/
 
-# Entornos virtuales (MUY IMPORTANTE)
+# Virtual environments
 .venv/
 env/
 venv/
 __pycache__/
 
-# Archivos de sistema
+# Generated / tooling output
+node_modules/
+graphify-out/
+repomix-output.xml
+
+# Secrets
+.env
+.env.*
+*.key
+*.pem
+
+# OS files
 .DS_Store
+Thumbs.db

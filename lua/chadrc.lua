@@ -2,7 +2,7 @@
 local M = {}
 
 M.base46 = {
-    theme = "fluorodark", -- Cambia automáticamente con tu selector de temas
+    theme = "cyberkali", -- Cambia automáticamente con tu selector de temas
     hl_override = {
         WinBar = { bg = "NONE" },
         WinBarNC = { bg = "NONE" },

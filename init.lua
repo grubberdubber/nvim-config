@@ -43,6 +43,7 @@ require("lazy").setup({
     { import = "plugins" },
 }, {
     defaults = { lazy = true },
+    git = { timeout = 900 }, -- 15 min: avante compila varios crates en Rust
     install = { colorscheme = { "nvchad" } },
     ui = { icons = { ft = "", lazy = "󰂠 ", loaded = "", not_loaded = "" } },
     performance = {
