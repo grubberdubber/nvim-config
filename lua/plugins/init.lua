@@ -1,29 +1,26 @@
 local plugins = {
 
   -- ══════════════════════════════════════════════════════════════
-  --  1. DESACTIVAR AUTOPAIRS
+  --  DESACTIVAR PLUGINS QUE NO QUEREMOS
   -- ══════════════════════════════════════════════════════════════
-  {
-    "windwp/nvim-autopairs",
-    enabled = false,
-  },
+  { "windwp/nvim-autopairs",  enabled = false }, -- sin cierres automáticos
+  { "windwp/nvim-ts-autotag", enabled = false }, -- sin cierre de tags HTML
 
   -- ══════════════════════════════════════════════════════════════
-  --  2. DESACTIVAR AUTOTAG
-  -- ══════════════════════════════════════════════════════════════
-  {
-    "windwp/nvim-ts-autotag",
-    enabled = false,
-  },
-
-  -- ══════════════════════════════════════════════════════════════
-  --  3. MASON (Gestor de herramientas)
+  --  MASON — gestor de herramientas (LSP, DAP, linters, formatters)
+  --  DEBE declararse antes que mason-lspconfig y mason-nvim-dap
   -- ══════════════════════════════════════════════════════════════
   {
     "williamboman/mason.nvim",
     cmd = { "Mason", "MasonInstall", "MasonUninstall", "MasonUpdate" },
-    opts = {
-      ensure_installed = {
+    opts = {},
+    config = function(_, opts)
+      require("mason").setup(opts)
+
+      -- Instala formateadores disponibles en Mason
+      -- NOTA: gofmt y dart_format NO van aquí (vienen con Go/Flutter)
+      local tools = {
+        -- Formateadores
         "stylua",
         "black",
         "prettier",
@@ -35,17 +32,20 @@ local plugins = {
         "ktlint",
         "scalafmt",
         "sql-formatter",
-      },
-    },
-    config = function(_, opts)
-      require("mason").setup()
+        -- Adaptadores DAP que mason-nvim-dap no gestiona directamente
+        "js-debug-adapter",
+      }
+
       local ok, mr = pcall(require, "mason-registry")
       if not ok then return end
+
+      -- Instala cada tool de forma individual con pcall
+      -- si uno falla no rompe toda la lista
       mr.refresh(function()
-        for _, tool in ipairs(opts.ensure_installed) do
-          local ok_pkg, p = pcall(mr.get_package, tool)
-          if ok_pkg and not p:is_installed() then
-            p:install()
+        for _, tool in ipairs(tools) do
+          local ok_pkg, pkg = pcall(mr.get_package, tool)
+          if ok_pkg and not pkg:is_installed() then
+            pkg:install()
           end
         end
       end)
@@ -53,13 +53,14 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  4. MASON-LSPCONFIG
+  --  MASON-LSPCONFIG — puente Mason ↔ nvim-lspconfig
   -- ══════════════════════════════════════════════════════════════
   {
     "williamboman/mason-lspconfig.nvim",
     dependencies = { "williamboman/mason.nvim" },
     event = { "BufReadPre", "BufNewFile" },
     opts = {
+      -- Servidores LSP que se instalan automáticamente al abrir Neovim
       ensure_installed = {
         "lua_ls", "html", "cssls", "ts_ls", "pyright",
         "rust_analyzer", "bashls", "clangd", "gopls",
@@ -71,7 +72,8 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  5. LSP UNIVERSAL
+  --  LSP UNIVERSAL — expone :LspInfo y :LspStart
+  --  La lista de servidores está en lua/configs/lspconfig.lua
   -- ══════════════════════════════════════════════════════════════
   {
     "neovim/nvim-lspconfig",
@@ -81,25 +83,29 @@ local plugins = {
     },
     event = { "BufReadPre", "BufNewFile" },
     config = function()
-      -- CORRECCIÓN: Carga directa para evitar error de módulo nvchad.configs.lspconfig
       require "configs.lspconfig"
     end,
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  6. TREESITTER
+  --  TREESITTER — resaltado y sintaxis para los 30 lenguajes
   -- ══════════════════════════════════════════════════════════════
   {
     "nvim-treesitter/nvim-treesitter",
     lazy = false,
     opts = {
       ensure_installed = {
+        -- Base Neovim y Web
         "vim", "lua", "vimdoc",
         "html", "css", "javascript", "typescript", "php",
-        "c", "cpp", "rust", "go", "c_sharp", "swift",
-        "kotlin", "java", "objc", "asm",
+        -- Sistemas, Compilados y Bajo Nivel
+        "c", "cpp", "rust", "go", "c_sharp",
+        "swift", "kotlin", "java", "objc", "asm",
+        -- Scripting y Automatización
         "python", "bash", "powershell", "ruby", "perl",
+        -- Ciencia de Datos e IA
         "r", "julia", "matlab", "sql",
+        -- Funcional y Empresarial
         "scala",
       },
       highlight = { enable = true },
@@ -108,7 +114,8 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  7. CONFORM
+  --  CONFORM — formateo automático al guardar (:w)
+  --  Formateadores configurados en lua/configs/conform.lua
   -- ══════════════════════════════════════════════════════════════
   {
     "stevearc/conform.nvim",
@@ -117,7 +124,8 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  8. COLORIZER
+  --  COLORIZER — vista previa de colores hex (#ff0000, rgb, hsl)
+  --  Útil para CSS, Tailwind, configuraciones de temas, etc.
   -- ══════════════════════════════════════════════════════════════
   {
     "NvChad/nvim-colorizer.lua",
@@ -128,7 +136,8 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  9. EMMET
+  --  EMMET — abreviaciones HTML/CSS/JSX
+  --  Instalar el binario con: :MasonInstall emmet-ls
   -- ══════════════════════════════════════════════════════════════
   {
     "aca/emmet-ls",
@@ -136,7 +145,9 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  10. CODEIUM
+  --  CODEIUM — autocompletado con IA (gratuito, alternativa a Copilot)
+  --  <C-g>  → aceptar sugerencia
+  --  <C-]>  → descartar sugerencia
   -- ══════════════════════════════════════════════════════════════
   {
     "Exafunction/codeium.vim",
@@ -145,11 +156,85 @@ local plugins = {
       vim.keymap.set("i", "<C-g>", function()
         return vim.fn["codeium#Accept"]()
       end, { expr = true, silent = true })
+      vim.keymap.set("i", "<C-]>", function()
+        return vim.fn["codeium#Clear"]()
+      end, { expr = true, silent = true })
     end,
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  SNIPRUN
+  --  WHICH-KEY — muestra atajos disponibles al presionar <leader>
+  --  Imprescindible para memorizar el ecosistema de keymaps
+  -- ══════════════════════════════════════════════════════════════
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    opts  = {
+      preset = "modern",
+      delay  = 400, -- ms antes de mostrar el panel
+    },
+  },
+
+  -- ══════════════════════════════════════════════════════════════
+  --  GITSIGNS — indicadores de cambios Git en el gutter (columna izquierda)
+  --  Muestra: + línea nueva  ~ línea modificada  - línea eliminada
+  --  Atajos: ]c / [c → siguiente/anterior cambio  |  <leader>ph → preview hunk
+  -- ══════════════════════════════════════════════════════════════
+  {
+    "lewis6991/gitsigns.nvim",
+    event = { "BufReadPre", "BufNewFile" },
+    opts = {
+      signs = {
+        add          = { text = "▎" },
+        change       = { text = "▎" },
+        delete       = { text = "▁" },
+        topdelete    = { text = "▔" },
+        changedelete = { text = "▎" },
+        untracked    = { text = "▎" },
+      },
+      on_attach = function(bufnr)
+        local gs = package.loaded.gitsigns
+        local function bmap(mode, l, r, desc)
+          vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })
+        end
+        -- Navegar entre hunks (bloques de cambios)
+        bmap("n", "]c", function()
+          if vim.wo.diff then return "]c" end
+          vim.schedule(function() gs.next_hunk() end)
+          return "<Ignore>"
+        end, "Git: Siguiente hunk")
+        bmap("n", "[c", function()
+          if vim.wo.diff then return "[c" end
+          vim.schedule(function() gs.prev_hunk() end)
+          return "<Ignore>"
+        end, "Git: Hunk anterior")
+        -- Acciones sobre hunks
+        bmap("n", "<leader>ph", gs.preview_hunk,        "Git: Preview hunk")
+        bmap("n", "<leader>gs", gs.stage_hunk,          "Git: Stage hunk")
+        bmap("n", "<leader>gr", gs.reset_hunk,          "Git: Reset hunk")
+        bmap("n", "<leader>gS", gs.stage_buffer,        "Git: Stage buffer completo")
+        bmap("n", "<leader>gb", gs.toggle_current_line_blame, "Git: Toggle blame línea")
+      end,
+    },
+  },
+
+  -- ══════════════════════════════════════════════════════════════
+  --  COMMENT.NVIM — comentar/descomentar con estándar de IDE
+  --  gcc     → comentar línea        (Normal mode)
+  --  gc      → comentar selección    (Visual mode)
+  --  gbc     → comentar en bloque    (Normal mode)
+  --  Funciona con todos los lenguajes via Treesitter
+  -- ══════════════════════════════════════════════════════════════
+  {
+    "numToStr/Comment.nvim",
+    event = { "BufReadPre", "BufNewFile" },
+    opts = {},
+  },
+
+  -- ══════════════════════════════════════════════════════════════
+  --  SNIPRUN — ejecución inline de fragmentos sin salir de Neovim
+  --  Soporta: C, C++, Rust, Go, Java, Assembly, Bash, Python...
+  --  <leader>sr → ejecutar línea/bloque
   -- ══════════════════════════════════════════════════════════════
   {
     "michaelb/sniprun",
@@ -165,7 +250,9 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  IRON.NVIM
+  --  IRON.NVIM — REPL interactivo estilo Jupyter
+  --  Python, Julia, R, Ruby, Perl, Lua, Scala, Node, PowerShell
+  --  <leader>ro → abrir REPL  |  <leader>rs → enviar al REPL
   -- ══════════════════════════════════════════════════════════════
   {
     "hkupty/iron.nvim",
@@ -187,14 +274,16 @@ local plugins = {
             scala      = { command = { "scala" } },
             node       = { command = { "node" } },
           },
-          repl_open_cmd = "vsplit",
+          repl_open_cmd = "vsplit", -- abre el REPL en split vertical
         },
       }
     end,
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  DADBOD
+  --  DADBOD — central de bases de datos multiprotocolo
+  --  SQL / PL-SQL / T-SQL / MySQL / PostgreSQL / SQLite
+  --  <leader>db → abrir UI de base de datos
   -- ══════════════════════════════════════════════════════════════
   {
     "tpope/vim-dadbod",
@@ -209,7 +298,8 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  TROUBLE
+  --  TROUBLE — radar de errores, warnings y diagnósticos LSP
+  --  <leader>xx → toggle panel  |  <leader>xw → workspace
   -- ══════════════════════════════════════════════════════════════
   {
     "folke/trouble.nvim",
@@ -224,7 +314,8 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  LAZYGIT
+  --  LAZYGIT — control de versiones flotante dentro de Neovim
+  --  <leader>gg → abrir Lazygit
   -- ══════════════════════════════════════════════════════════════
   {
     "kdheepak/lazygit.nvim",
@@ -236,30 +327,43 @@ local plugins = {
   },
 
   -- ══════════════════════════════════════════════════════════════
-  --  DAP + UI
+  --  DAP — motor de debugging completo
+  --  Atajos estándar de IDE: F5/F9/F10/F11/F12/Shift+F5
+  --  Adaptadores instalados automáticamente por mason-nvim-dap:
+  --    debugpy    → Python
+  --    delve      → Go
+  --    codelldb   → C / C++ / Rust / Assembly
+  --    netcoredbg → C# / .NET
+  --  js-debug-adapter (JS/TS) instalado vía Mason directamente
+  --
+  --  Toda la configuración de adaptadores está en configs/dap.lua
+  --
+  --  DEPENDENCIA CRÍTICA: mason.nvim DEBE estar cargado antes
+  --  por eso está declarado explícitamente en dependencies
   -- ══════════════════════════════════════════════════════════════
   {
     "mfussenegger/nvim-dap",
     dependencies = {
-      "williamboman/mason.nvim",
-      "rcarriga/nvim-dap-ui",
-      "nvim-neotest/nvim-nio",
-      "jay-babu/mason-nvim-dap.nvim",
+      "williamboman/mason.nvim",       -- mason-core debe existir primero
+      "rcarriga/nvim-dap-ui",          -- interfaz gráfica del debugger
+      "nvim-neotest/nvim-nio",         -- async IO requerido por dap-ui
+      "jay-babu/mason-nvim-dap.nvim",  -- auto-instalación de adaptadores
     },
     config = function()
-      -- CARGA TU CONFIGURACIÓN CENTRALIZADA
-      require("configs.dap") 
-
-      local dap  = require "dap"
-      local dapui = require "dapui"
-      dapui.setup()
+      -- Instalación automática de adaptadores DAP vía Mason
       require("mason-nvim-dap").setup {
-        ensure_installed       = { "python", "delve", "codelldb" },
+        ensure_installed = {
+          "debugpy",    -- Python
+          "delve",      -- Go
+          "codelldb",   -- C / C++ / Rust / Assembly
+          "netcoredbg", -- C# / .NET
+        },
         automatic_installation = true,
       }
-      dap.listeners.after.event_initialized["dapui_config"]  = function() dapui.open() end
-      dap.listeners.before.event_terminated["dapui_config"]  = function() dapui.close() end
-      dap.listeners.before.event_exited["dapui_config"]      = function() dapui.close() end
+
+      -- Carga adaptadores, configuraciones por filetype y UI
+      -- desde configs/dap.lua (archivo centralizado)
+      require "configs.dap"
     end,
   },
 }
