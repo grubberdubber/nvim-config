@@ -1,0 +1,12 @@
+# Cachés y temporales de Neovim
+.netrwhist
+*.log
+
+# Caché de temas NvChad (se regenera en cada máquina)
+/base46/
+
+# Lock de plugins (cada máquina gestiona sus versiones)
+lazy-lock.json
+
+# Conexiones guardadas de Dadbod (pueden tener credenciales)
+/db_ui/
