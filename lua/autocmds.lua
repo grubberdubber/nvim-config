@@ -126,14 +126,114 @@ vim.api.nvim_create_autocmd("VimEnter", {
             return
         end
 
-        -- Lo que ya tipeaste -> blanco del tema
-        if colors.white then
-            vim.api.nvim_set_hl(0, "BlinkCmpLabelMatch", { fg = colors.white })
-        end
+        -- Lo que ya tipeaste ("pri" de "print") -> azul/celeste fijo,
+        -- estilo VS Code. Fijo a propósito: no depende del tema activo,
+        -- porque los temas no definen este matiz de "coincidencia de
+        -- autocompletado" por su cuenta.
+        vim.api.nvim_set_hl(0, "BlinkCmpLabelMatch", { fg = "#2AAAFF", bold = true, force = true })
 
-        -- Lo que falta completar de la palabra -> morado del tema
-        if colors.purple then
-            vim.api.nvim_set_hl(0, "BlinkCmpLabel", { fg = colors.purple })
+        -- Lo que falta completar de la palabra -> color normal del tema
+        if colors.white then
+            vim.api.nvim_set_hl(0, "BlinkCmpLabel", { fg = colors.white, force = true })
         end
     end,
 })
+
+-- ── LÍNEA ACTUAL SUTIL (estilo VS Code) ───────────────────────────
+-- Resalta la línea del cursor solo en modo Normal — en Insert desaparece
+-- para no distraer mientras escribís. Mismo patrón que la numeración híbrida.
+vim.opt.cursorline = true
+
+local cursorline_group = vim.api.nvim_create_augroup("CursorlineNormalOnly", { clear = true })
+vim.api.nvim_create_autocmd("InsertEnter", {
+    group = cursorline_group,
+    callback = function()
+        vim.opt_local.cursorline = false
+    end,
+})
+vim.api.nvim_create_autocmd({ "InsertLeave", "BufEnter", "FocusGained" }, {
+    group = cursorline_group,
+    callback = function()
+        vim.opt_local.cursorline = true
+    end,
+})
+
+-- ── AJUSTE DE CONTRASTE PARA CURSORLINE (el color del tema era invisible) ──
+vim.api.nvim_create_autocmd("VimEnter", {
+    once = true,
+    callback = function()
+        local ok, base46 = pcall(require, "base46")
+        if not ok then
+            return
+        end
+        local colors = base46.get_theme_tb "base_30"
+        if colors and colors.one_bg then
+            -- one_bg es un tono apenas más claro que el fondo (black),
+            -- perfecto para un cursorline sutil que sí se note.
+            vim.api.nvim_set_hl(0, "CursorLine", { bg = colors.black2 })
+        end
+    end,
+})
+
+-- ── FOLD COLUMN: siempre tenue (sin brillo al pasar el cursor) ────
+-- Los puntos "..." de la línea plegada sí van en blanco, para
+-- identificar rápido qué está compactado.
+vim.api.nvim_create_autocmd("VimEnter", {
+    once = true,
+    callback = function()
+        local ok, base46 = pcall(require, "base46")
+        if not ok then
+            return
+        end
+        local colors = base46.get_theme_tb "base_30"
+        if not colors then
+            return
+        end
+
+        -- Triángulo del fold: siempre tenue, no cambia con el cursor
+        if colors.grey then
+            vim.api.nvim_set_hl(0, "FoldColumn", { fg = colors.grey })
+            vim.api.nvim_set_hl(0, "CursorLineFold", { fg = colors.grey })
+        end
+
+        -- Los "..." de la línea plegada: blanco, bien visible
+        if colors.white then
+            vim.api.nvim_set_hl(0, "UfoFoldedEllipsis", { fg = colors.white, bold = true })
+        end
+    end,
+})
+
+-- ── AVANTE: bajada automática de modelo Gemini al agotar cuota ──────
+-- Cascada: 3.1 Pro -> 3.7 Flash -> 3.6 Flash -> 3.5 Flash-Lite.
+-- Al detectar un error de cuota/rate-limit, baja un escalón solo.
+local avante_cascade = { "gemini", "gemini_flash37", "gemini_flash36", "gemini_flash_lite" }
+local avante_cascade_labels = {
+    gemini = "Gemini 3.1 Pro",
+    gemini_flash37 = "Gemini 3.7 Flash",
+    gemini_flash36 = "Gemini 3.6 Flash",
+    gemini_flash_lite = "Gemini 3.5 Flash-Lite",
+}
+_G.AvanteCascadeIndex = 1
+
+local orig_notify_avante = vim.notify
+vim.notify = function(msg, level, opts)
+    if
+        type(msg) == "string"
+        and (msg:find "rate.?limit" or msg:find "quota" or msg:find "429" or msg:find "RESOURCE_EXHAUSTED")
+    then
+        if _G.AvanteCascadeIndex < #avante_cascade then
+            _G.AvanteCascadeIndex = _G.AvanteCascadeIndex + 1
+            local next_provider = avante_cascade[_G.AvanteCascadeIndex]
+            vim.schedule(function()
+                pcall(vim.cmd, "AvanteSwitchProvider " .. next_provider)
+                orig_notify_avante(
+                    "Avante: cuota agotada, bajando a " .. avante_cascade_labels[next_provider],
+                    vim.log.levels.WARN
+                )
+            end)
+        else
+            orig_notify_avante("Avante: todos los modelos de Gemini están sin cuota por ahora", vim.log.levels.ERROR)
+        end
+    end
+    orig_notify_avante(msg, level, opts)
+end

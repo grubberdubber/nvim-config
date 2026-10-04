@@ -270,14 +270,19 @@ local plugins = {
                 "clangd",
                 "gopls",
                 "intelephense",
-                "jdtls",
                 "omnisharp",
                 "sqlls",
                 "kotlin_language_server",
+                "solargraph",
+                "powershell_es",
+                "asm_lsp",
+                "nim_langserver",
+                "jdtls",
+                "texlab",
             },
             automatic_installation = false,
             automatic_enable = {
-                exclude = { "jdtls" }, -- jdtls arranca vía ftplugin/java.lua (con bundles de debug), no acá
+                exclude = { "jdtls" },
             },
         },
     },
@@ -343,6 +348,7 @@ local plugins = {
                     "r",
                     "julia",
                     "matlab",
+                    "nim",
                     "sql",
                     "scala",
                     "dart",
@@ -527,6 +533,116 @@ local plugins = {
         end,
     },
 
+    -- ── SURROUND (agregar/cambiar/borrar comillas, tags, paréntesis) ──
+    {
+        "kylechui/nvim-surround",
+        event = { "BufReadPost", "BufNewFile" },
+        opts = {},
+    },
+
+    -- ── ILLUMINATE (resalta otras apariciones de la variable/función) ──
+    {
+        "RRethy/vim-illuminate",
+        event = { "BufReadPost", "BufNewFile" },
+        config = function()
+            require("illuminate").configure {
+                delay = 150,
+                filetypes_denylist = { "NvimTree", "TelescopePrompt", "alpha" },
+            }
+        end,
+    },
+
+    -- ── UFO (folding real con Treesitter/LSP) ─────────────────────
+    {
+        "kevinhwang91/nvim-ufo",
+        dependencies = { "kevinhwang91/promise-async" },
+        event = { "BufReadPost", "BufNewFile" },
+        opts = {
+            provider_selector = function()
+                return { "treesitter", "indent" }
+            end,
+        },
+        init = function()
+            vim.o.foldcolumn = "1"
+            vim.o.foldlevel = 99
+            vim.o.foldlevelstart = 99
+            vim.o.foldenable = true
+        end,
+    },
+
+    -- ── CLIENTE REST (probar APIs sin salir del editor) ────────────
+    {
+        "mistweaverco/kulala.nvim",
+        ft = { "http", "rest" },
+        opts = {},
+    },
+
+    -- ── REFACTORING (extraer variable/función con scope real) ──────
+    {
+        "ThePrimeagen/refactoring.nvim",
+        dependencies = { "nvim-lua/plenary.nvim", "nvim-treesitter/nvim-treesitter" },
+        cmd = { "Refactor" },
+        keys = { { "<leader>re", mode = "v" }, { "<leader>rf", mode = "v" } },
+        opts = {},
+    },
+
+    -- ── MULTI-CURSOR ────────────────────────────────────────────────
+    {
+        "jake-stewart/multicursor.nvim",
+        branch = "1.0",
+        event = { "BufReadPost", "BufNewFile" },
+    },
+
+    -- ── MODO ZEN (foco, oculta UI) ──────────────────────────────────
+    {
+        "folke/zen-mode.nvim",
+        cmd = "ZenMode",
+        opts = {
+            window = { width = 0.85 },
+        },
+    },
+    {
+        "folke/twilight.nvim",
+        cmd = "Twilight",
+        opts = {},
+    },
+
+    -- ── LATEX (VimTeX + compilación continua + Zathura) ────────────
+    {
+        "lervag/vimtex",
+        ft = "tex",
+        init = function()
+            vim.g.vimtex_view_method = "zathura"
+            vim.g.vimtex_compiler_method = "latexmk"
+            vim.g.vimtex_compiler_latexmk = {
+                continuous = 1,
+                options = {
+                    "-shell-escape",
+                    "-verbose",
+                    "-file-line-error",
+                    "-synctex=1",
+                    "-interaction=nonstopmode",
+                },
+            }
+            vim.g.vimtex_quickfix_mode = 0 -- No abrir quickfix automático en cada warning menor
+            vim.g.vimtex_syntax_conceal = {
+                accents = true,
+                ligatures = true,
+                cites = true,
+                fancy = true,
+                spacing = true,
+                greek = true,
+                math_bounds = true,
+                math_delimiters = true,
+                math_fracs = true,
+                math_super_sub = true,
+                math_symbols = true,
+                sections = false,
+                styles = true,
+            }
+        end,
+    },
+
     {
         "kdheepak/lazygit.nvim",
         cmd = { "LazyGit", "LazyGitConfig", "LazyGitCurrentFile", "LazyGitFilter", "LazyGitFilterCurrentFile" },
@@ -658,6 +774,48 @@ local plugins = {
         },
     },
 
+    -- ── COLUMNA IZQUIERDA CUSTOM: Breakpoints > Git > Número > Fold ──
+    {
+        "luukvbaal/statuscol.nvim",
+        event = { "BufReadPost", "BufNewFile" },
+        config = function()
+            local builtin = require "statuscol.builtin"
+
+            -- Triángulos estilo VS Code en vez de flechitas clásicas de Vim,
+            -- y sin línea vertical conectando los niveles de pliegue.
+            vim.opt.fillchars:append {
+                foldopen = "▼", -- pliegue ABIERTO (expandido) — triángulo sólido, más visible
+                foldclose = "▶", -- pliegue CERRADO (colapsado) — triángulo sólido, más visible
+                foldsep = " ",
+            }
+            require("statuscol").setup {
+                relculright = true,
+                segments = {
+                    -- 1. Breakpoints (DAP) — extremo izquierdo
+                    {
+                        sign = { name = { "Dap" }, maxwidth = 1, colwidth = 1, auto = true },
+                        click = "v:lua.ScSa",
+                    },
+                    -- 2. Git signs — filtra por NAMESPACE, no por nombre
+                    -- (gitsigns moderno usa extmarks, no :sign-define clásico)
+                    {
+                        sign = {
+                            namespace = { "gitsigns" },
+                            name = { "gitsigns" },
+                            maxwidth = 2,
+                            colwidth = 2,
+                            auto = true,
+                        },
+                        click = "v:lua.ScSa",
+                    },
+                    -- 3. Numeración híbrida (absoluta en cursor, relativa el resto)
+                    { text = { builtin.lnumfunc, " " }, click = "v:lua.ScLa" },
+                    -- 4. Fold column — triángulos, sin dígitos de anidación
+                    { text = { builtin.foldfunc }, click = "v:lua.ScFa" },
+                },
+            }
+        end,
+    },
     -- ── 10. SQL STAFF & NAVEGADOR DE ESTRUCTURAS ───────────────────
     {
         "stevearc/aerial.nvim",
@@ -672,6 +830,173 @@ local plugins = {
                 layout = { default_direction = "prefer_right", min_width = 28 },
                 show_guides = false,
                 filter_kind = false,
+            }
+        end,
+    },
+
+    -- ── SURROUND (agregar/cambiar/borrar comillas, tags, paréntesis) ──
+    {
+        "kylechui/nvim-surround",
+        event = { "BufReadPost", "BufNewFile" },
+        opts = {},
+    },
+
+    -- ── ILLUMINATE (resalta otras apariciones de la variable/función) ──
+    {
+        "RRethy/vim-illuminate",
+        event = { "BufReadPost", "BufNewFile" },
+        config = function()
+            require("illuminate").configure {
+                delay = 150,
+                filetypes_denylist = { "NvimTree", "TelescopePrompt", "alpha" },
+            }
+        end,
+    },
+
+    -- ── AVANTE.NVIM: IA agente (chat/edición asistida) con Gemini ────
+    -- Distinto de Codeium: Codeium sugiere código inline mientras
+    -- escribís, Avante es un asistente tipo Cursor — le pedís cosas
+    -- en lenguaje natural y edita/explica/genera código con contexto
+    -- completo del proyecto. No compiten, se complementan.
+    {
+        "yetone/avante.nvim",
+        version = false, -- Sigue la última versión, no un tag fijo
+        build = "make",
+        event = "VeryLazy",
+        dependencies = {
+            "nvim-treesitter/nvim-treesitter",
+            "stevearc/dressing.nvim",
+            "nvim-lua/plenary.nvim",
+            "MunifTanjim/nui.nvim",
+            "nvim-tree/nvim-web-devicons",
+            {
+                "MeanderingProgrammer/render-markdown.nvim",
+                opts = { file_types = { "markdown", "Avante" } },
+                ft = { "markdown", "Avante" },
+            },
+        },
+        opts = {
+            provider = "gemini", -- Arranca siempre con el más potente
+
+            providers = {
+                gemini = {
+                    endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
+                    model = "gemini-3.1-pro",
+                    timeout = 30000,
+                    context_window = 1048576,
+                    extra_request_body = { generationConfig = { temperature = 0.3 } },
+                },
+                gemini_flash37 = {
+                    __inherited_from = "gemini",
+                    model = "gemini-3.7-flash",
+                },
+                gemini_flash36 = {
+                    __inherited_from = "gemini",
+                    model = "gemini-3.6-flash",
+                },
+                gemini_flash_lite = {
+                    __inherited_from = "gemini",
+                    model = "gemini-3.5-flash-lite",
+                },
+            },
+
+            behaviour = {
+                auto_suggestions = false,
+                enable_fastapply = false,
+            },
+            repo_map = {
+                ignore_patterns = { ".git", "node_modules" },
+            },
+        },
+    },
+
+    -- ── UFO (folding real con Treesitter/LSP) ─────────────────────
+    {
+        "kevinhwang91/nvim-ufo",
+        dependencies = { "kevinhwang91/promise-async" },
+        event = { "BufReadPost", "BufNewFile" },
+        opts = {
+            provider_selector = function()
+                return { "treesitter", "indent" }
+            end,
+        },
+        init = function()
+            vim.o.foldcolumn = "1"
+            vim.o.foldlevel = 99
+            vim.o.foldlevelstart = 99
+            vim.o.foldenable = true
+        end,
+    },
+
+    -- ── CLIENTE REST (probar APIs sin salir del editor) ────────────
+    {
+        "mistweaverco/kulala.nvim",
+        ft = { "http", "rest" },
+        opts = {},
+    },
+
+    -- ── REFACTORING (extraer variable/función con scope real) ──────
+    {
+        "ThePrimeagen/refactoring.nvim",
+        dependencies = { "nvim-lua/plenary.nvim", "nvim-treesitter/nvim-treesitter" },
+        cmd = { "Refactor" },
+        keys = { { "<leader>re", mode = "v" }, { "<leader>rf", mode = "v" } },
+        opts = {},
+    },
+
+    -- ── MULTI-CURSOR ────────────────────────────────────────────────
+    {
+        "jake-stewart/multicursor.nvim",
+        branch = "1.0",
+        event = { "BufReadPost", "BufNewFile" },
+    },
+
+    -- ── MODO ZEN (foco, oculta UI) ──────────────────────────────────
+    {
+        "folke/zen-mode.nvim",
+        cmd = "ZenMode",
+        opts = {
+            window = { width = 0.85 },
+        },
+    },
+    {
+        "folke/twilight.nvim",
+        cmd = "Twilight",
+        opts = {},
+    },
+
+    -- ── LATEX (VimTeX + compilación continua + Zathura) ────────────
+    {
+        "lervag/vimtex",
+        ft = "tex",
+        init = function()
+            vim.g.vimtex_view_method = "zathura"
+            vim.g.vimtex_compiler_method = "latexmk"
+            vim.g.vimtex_compiler_latexmk = {
+                continuous = 1,
+                options = {
+                    "-shell-escape",
+                    "-verbose",
+                    "-file-line-error",
+                    "-synctex=1",
+                    "-interaction=nonstopmode",
+                },
+            }
+            vim.g.vimtex_quickfix_mode = 0
+            vim.g.vimtex_syntax_conceal = {
+                accents = true,
+                ligatures = true,
+                cites = true,
+                fancy = true,
+                spacing = true,
+                greek = true,
+                math_bounds = true,
+                math_delimiters = true,
+                math_fracs = true,
+                math_super_sub = true,
+                math_symbols = true,
+                sections = false,
+                styles = true,
             }
         end,
     },

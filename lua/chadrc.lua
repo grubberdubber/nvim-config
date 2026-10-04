@@ -2,7 +2,7 @@
 local M = {}
 
 M.base46 = {
-    theme = "eldritch", -- Cambia automáticamente con tu selector de temas
+    theme = "cyberkali", -- Cambia automáticamente con tu selector de temas
     hl_override = {
         WinBar = { bg = "NONE" },
         WinBarNC = { bg = "NONE" },
@@ -247,7 +247,7 @@ local function winbar_path_mode()
         end
     end
 
-    return "%=" .. table.concat(crumbs, "%#St_file_txt# > ") .. "%="
+    return "%=" .. table.concat(crumbs, "%#St_file_txt#›") .. "%="
 end
 
 local function winbar_files_mode()
@@ -298,9 +298,8 @@ local function winbar_right_section()
         str = str .. "%#DiagnosticInfo# " .. info .. " "
     end
     if hint > 0 then
-        str = str .. "%#DiagnosticHint#󰛨 " .. hint .. " "
+        str = str .. "%#DiagnosticHint# " .. hint .. " "
     end
-
     -- Conteo de archivos (solo archivos, sin contar carpetas) de la carpeta actual
     local dir = vim.fn.expand "%:p:h"
     local file_count = 0
@@ -325,36 +324,13 @@ _G.WinBarDraw = function()
         return ""
     end
 
-    local m = vim.api.nvim_get_mode().mode
-    local modes = {
-        n = "NORMAL",
-        i = "INSERT",
-        v = "VISUAL",
-        V = "V-LINE",
-        ["\22"] = "V-BLOCK",
-        c = "COMMAND",
-        R = "REPLACE",
-        t = "TERMINAL",
-    }
-    local hl = {
-        n = "St_NormalMode",
-        i = "St_InsertMode",
-        v = "St_VisualMode",
-        V = "St_VisualMode",
-        ["\22"] = "St_VisualMode",
-        c = "St_CommandMode",
-        R = "St_ReplaceMode",
-        t = "St_InsertMode",
-    }
-
-    local left = "%#" .. (hl[m] or "St_NormalMode") .. "# 󰕮 " .. (modes[m] or string.upper(m)) .. " "
     local right = winbar_right_section()
 
     if vim.g.winbar_mode == "files" then
-        return left .. "%#St_file_txt#" .. winbar_files_mode() .. right
+        return "%#St_file_txt#" .. winbar_files_mode() .. right
     end
 
-    return left .. "%#St_file_txt#" .. winbar_path_mode() .. right
+    return "%#St_file_txt#" .. winbar_path_mode() .. right
 end
 
 vim.opt.winbar = "%{%v:lua.WinBarDraw()%}"

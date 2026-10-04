@@ -11,8 +11,10 @@ end
 -- 1. CONFIGURACIÓN DE LA UI
 dapui.setup {
     controls = {
-        enabled = false, -- Bug conocido de dapui: crashea si togglés sin sesión activa.
-        -- Usá F5/F9/F10/F11/F12/<S-F5> (ya mapeados) en vez de los botones clicables.
+        enabled = true, -- Bug conocido de dapui: puede crashear si togglés
+        -- el panel SIN sesión de debug activa (ni breakpoint puesto).
+        -- Poné al menos un breakpoint con F9 antes de abrir <leader>du
+        -- por primera vez para evitarlo.
     },
 }
 -- 2. AUTO-OPEN BLINDADO

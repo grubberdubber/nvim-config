@@ -450,3 +450,77 @@ end, { desc = "TODO: Comentario anterior" })
 -- ── NOTAS RÁPIDAS (ventana flotante) ──────────────────────────────
 map("n", "<leader>nn", "<cmd>GlobalNote<CR>", { desc = "Nota: Global (todas las sesiones)" })
 map("n", "<leader>np", "<cmd>ProjectNote<CR>", { desc = "Nota: Del proyecto actual (por carpeta git)" })
+
+-- ── FOLDING (nvim-ufo) ────────────────────────────────────────────
+map("n", "zR", function()
+    require("ufo").openAllFolds()
+end, { desc = "Fold: Abrir todo" })
+map("n", "zM", function()
+    require("ufo").closeAllFolds()
+end, { desc = "Fold: Cerrar todo" })
+
+-- ── REFACTORING (selección visual) ───────────────────────────────
+map("v", "<leader>rv", function()
+    require("refactoring").refactor "Extract Variable"
+end, { desc = "Refactor: Extraer variable" })
+map("v", "<leader>rf", function()
+    require("refactoring").refactor "Extract Function"
+end, { desc = "Refactor: Extraer función" })
+map("v", "<leader>ri", function()
+    require("refactoring").refactor "Inline Variable"
+end, { desc = "Refactor: Inline variable" })
+
+-- ── MULTI-CURSOR ──────────────────────────────────────────────────
+local mc = require "multicursor-nvim"
+mc.setup()
+map({ "n", "v" }, "<leader>mj", function()
+    mc.lineAddCursor(1)
+end, { desc = "MultiCursor: Agregar cursor abajo" })
+map({ "n", "v" }, "<leader>mk", function()
+    mc.lineAddCursor(-1)
+end, { desc = "MultiCursor: Agregar cursor arriba" })
+map({ "n", "v" }, "<C-A-n>", function()
+    mc.matchAddCursor(1)
+end, { desc = "MultiCursor: Agregar cursor en siguiente coincidencia" })
+map("n", "<Esc>", function()
+    if not mc.cursorsEnabled() then
+        mc.enableCursors()
+    else
+        mc.clearCursors()
+    end
+end, { desc = "MultiCursor: Limpiar cursores / Esc normal" })
+
+-- ── MODO ZEN ──────────────────────────────────────────────────────
+map("n", "<leader>zz", "<cmd>ZenMode<CR>", { desc = "Zen: Modo foco" })
+
+-- ── LATEX ─────────────────────────────────────────────────────────
+map("n", "<leader>ll", "<cmd>VimtexCompile<CR>", { desc = "LaTeX: Compilar (continuo)" })
+map("n", "<leader>lv", "<cmd>VimtexView<CR>", { desc = "LaTeX: Ver PDF" })
+map("n", "<leader>lc", "<cmd>VimtexClean<CR>", { desc = "LaTeX: Limpiar auxiliares" })
+
+map("n", "<leader>ag", function()
+    local models = {
+        { label = "Gemini 3.1 Pro (más potente)", provider = "gemini", idx = 1 },
+        { label = "Gemini 3.7 Flash", provider = "gemini_flash37", idx = 2 },
+        { label = "Gemini 3.6 Flash", provider = "gemini_flash36", idx = 3 },
+        { label = "Gemini 3.5 Flash-Lite (más rápido/económico)", provider = "gemini_flash_lite", idx = 4 },
+    }
+    vim.ui.select(models, {
+        prompt = "Cambiar modelo de Avante:",
+        format_item = function(item)
+            return item.label
+        end,
+    }, function(choice)
+        if choice then
+            require("avante.api").switch_provider(choice.provider)
+            _G.AvanteCascadeIndex = choice.idx
+            vim.notify("Avante: usando " .. choice.label, vim.log.levels.INFO)
+        end
+    end)
+end, { desc = "Avante: Elegir modelo Gemini" })
+
+map("n", "<leader>aR", function()
+    require("avante.api").switch_provider "gemini"
+    _G.AvanteCascadeIndex = 1
+    vim.notify("Avante: reseteado a Gemini 3.1 Pro", vim.log.levels.INFO)
+end, { desc = "Avante: Resetear al modelo más potente" })
