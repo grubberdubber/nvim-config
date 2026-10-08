@@ -375,6 +375,11 @@ local function patch_blink_docs_rainbow()
             if not lang or lang == "markdown" then
                 return
             end
+
+            -- Añade estas 3 líneas para proteger el color blanco en la doc de Blink
+            if lang == "html" or lang == "xml" then
+                return
+            end
             -- La doc de ts_ls viene con tipos (x?: number): parsear como TypeScript
             if lang == "javascript" then
                 local ok_ts, q = pcall(vim.treesitter.query.get, "typescript", "rainbow-delimiters")
