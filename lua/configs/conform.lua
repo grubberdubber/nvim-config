@@ -8,6 +8,11 @@ local options = {
         css = { "prettier" },
         php = { "php_cs_fixer" },
         markdown = { "prettier" },
+        scss = { "prettier" },
+        less = { "prettier" },
+        javascriptreact = { "prettier" },
+        typescriptreact = { "prettier" },
+        vue = { "prettier" },
 
         -- ── Sistemas y Compilados ────────────────────────────────────
         python = { "black" },
