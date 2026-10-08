@@ -60,10 +60,12 @@ local plugins = {
         "HiPhish/rainbow-delimiters.nvim",
         event = "User FilePost", -- Carga inteligente solo cuando abres un archivo con código
         config = function()
-            -- Usamos la configuración por defecto, que es excelente
-            require("rainbow-delimiters.setup").setup()
+            require("rainbow-delimiters.setup").setup {
+                blacklist = { "html", "xml", "svg", "xhtml", "htmldjango", "blade", "twig" },
+            }
         end,
     },
+
     -- ── 2. COLOR PICKER PARA CSS ───────────────────────────────────
     {
         "uga-rosa/ccc.nvim",
@@ -228,6 +230,9 @@ local plugins = {
                 "stylelint",
                 "markdownlint-cli2",
                 "marksman",
+                "tailwindcss-language-server",
+                "eslint-lsp",
+                "svelte-language-server",
             }
             local ok, mr = pcall(require, "mason-registry")
             if not ok then
