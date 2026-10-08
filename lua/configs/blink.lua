@@ -1,3 +1,41 @@
+-- Iconos y colores de css_selectors. El icono se decide por el campo propio
+-- `sel_kind`, no por source_id (así gana aunque el LSP ofrezca la misma palabra).
+local SELECTOR = {
+    class = { icon = ".", hl = "BlinkCmpSelectorClass" },
+    id = { icon = "#", hl = "BlinkCmpSelectorId" },
+    var = { icon = "$", hl = "BlinkCmpSelectorVar" },
+}
+vim.api.nvim_set_hl(0, "BlinkCmpSelectorClass", { link = "Type", default = true })
+vim.api.nvim_set_hl(0, "BlinkCmpSelectorId", { link = "Constant", default = true })
+vim.api.nvim_set_hl(0, "BlinkCmpSelectorVar", { link = "Special", default = true })
+
+-- En contexto de clase/id/variable: si css_selectors ya conoce el nombre, se
+-- quita el duplicado del LSP/buffer (así queda una sola fila, con su icono).
+-- Los items de tailwindcss se conservan (traen previsualización de color) y
+-- reciben la marca para pintarse con el icono.
+local function force_selector_kind(ctx, items)
+    local ok, cs = pcall(require, "configs.css_selectors")
+    if not ok then
+        return items
+    end
+    local kind = cs.kind_at(ctx.line:sub(1, ctx.cursor[2]))
+    if not kind then
+        return items
+    end
+    local out = {}
+    for _, it in ipairs(items) do
+        if cs.has(kind, it.label) then
+            if it.client_name == "tailwindcss" then
+                it.sel_kind = kind
+                out[#out + 1] = it
+            end
+        else
+            out[#out + 1] = it
+        end
+    end
+    return out
+end
+
 return {
     keymap = {
         preset = "default",
@@ -67,6 +105,18 @@ return {
             border = "none",
             draw = {
                 treesitter = { "lsp" },
+                components = {
+                    kind_icon = {
+                        text = function(ctx)
+                            local s = ctx.item.sel_kind and SELECTOR[ctx.item.sel_kind]
+                            return (s and s.icon or ctx.kind_icon) .. ctx.icon_gap
+                        end,
+                        highlight = function(ctx)
+                            local s = ctx.item.sel_kind and SELECTOR[ctx.item.sel_kind]
+                            return s and s.hl or ctx.kind_hl
+                        end,
+                    },
+                },
             },
         },
         ghost_text = { enabled = true },
@@ -80,19 +130,41 @@ return {
     },
 
     sources = {
-        default = { "lsp", "path", "snippets", "buffer", "dadbod" },
+        default = { "lsp", "path", "snippets", "buffer", "dadbod", "html_values", "css_selectors" },
         min_keyword_length = 0,
         providers = {
             dadbod = {
                 name = "Dadbod",
                 module = "vim_dadbod_completion.blink",
             },
+            html_values = {
+                name = "HTML values",
+                module = "configs.html_values",
+            },
+            css_selectors = {
+                name = "CSS project",
+                module = "configs.css_selectors",
+                score_offset = 5,
+            },
             lsp = {
+                fallbacks = {},
+                transform_items = force_selector_kind,
                 override = {
                     get_trigger_characters = function(self)
                         local chars = self:get_trigger_characters()
                         vim.list_extend(chars, { "!", ">", ".", "#", "*", "+", ":", "{", "}", "[", "]", "(", ")" })
                         return chars
+                    end,
+                },
+            },
+            buffer = {
+                transform_items = force_selector_kind,
+                opts = {
+                    -- Busca en todos los buffers abiertos, no solo en el actual
+                    get_bufnrs = function()
+                        return vim.tbl_filter(function(buf)
+                            return vim.bo[buf].buflisted and vim.bo[buf].buftype == ""
+                        end, vim.api.nvim_list_bufs())
                     end,
                 },
             },
