@@ -41,6 +41,9 @@ local servers = {
     "nim_langserver",
     "texlab",
     "marksman",
+    "tailwindcss",
+    "eslint",
+    "svelte",
 }
 
 -- ── Pyright: análisis avanzado ────────────────────────────────
@@ -168,6 +171,14 @@ vim.lsp.config("jsonls", {
             schemas = require("schemastore").json.schemas(),
             validate = { enable = true },
         },
+    },
+})
+
+vim.lsp.config("cssls", {
+    settings = {
+        css = { lint = { unknownAtRules = "ignore" } },
+        scss = { lint = { unknownAtRules = "ignore" } },
+        less = { lint = { unknownAtRules = "ignore" } },
     },
 })
 
