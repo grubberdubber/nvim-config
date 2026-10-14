@@ -495,3 +495,5 @@ vim.api.nvim_create_autocmd("FileType", {
         end)
     end,
 })
+
+require("configs.tag_errors").setup()

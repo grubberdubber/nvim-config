@@ -2,7 +2,7 @@
 local M = {}
 
 M.base46 = {
-    theme = "cyberkali", -- Cambia automáticamente con tu selector de temas
+    theme = "fluorodark", -- Cambia automáticamente con tu selector de temas
     hl_override = {
         WinBar = { bg = "NONE" },
         WinBarNC = { bg = "NONE" },
@@ -211,11 +211,52 @@ vim.api.nvim_create_autocmd({ "DirChanged", "BufWritePost", "BufNewFile" }, {
     end,
 })
 
+-- ── Estilo del breadcrumb (discreto, estilo VS Code) ────────────────────────────────
+-- Los colores salen del tema activo (Comment / Normal / DiagnosticWarn / WinBar) y se
+-- recalculan solos si cambias de tema: no hay ningún hexadecimal fijo.
+local crumb_key
+
+local function mix(a, b, t) -- mezcla dos colores 0xRRGGBB: t=0 -> a, t=1 -> b
+    local function ch(c, s)
+        return math.floor(c / s) % 256
+    end
+    local function lerp(x, y)
+        return math.floor(x + (y - x) * t + 0.5)
+    end
+    return lerp(ch(a, 65536), ch(b, 65536)) * 65536 + lerp(ch(a, 256), ch(b, 256)) * 256 + lerp(ch(a, 1), ch(b, 1))
+end
+
+local function ensure_crumb_hl()
+    local function get(name)
+        return vim.api.nvim_get_hl(0, { name = name, link = false })
+    end
+    local comment = get("Comment").fg or 0x6c7a96
+    local normal = get("Normal").fg or 0xcccccc
+    local warn = get("DiagnosticWarn").fg or 0xe0af68
+    local bg = get("WinBar").bg
+    local key = table.concat({ comment, normal, warn, bg or -1 }, ":")
+    if key == crumb_key then
+        return
+    end
+    crumb_key = key
+    local function set(name, opts)
+        opts.bg = bg
+        vim.api.nvim_set_hl(0, name, opts)
+    end
+    set("WinCrumb", { fg = comment }) -- carpetas
+    set("WinCrumbSep", { fg = mix(comment, bg or 0x000000, 0.35) }) -- separador, aún más tenue
+    set("WinCrumbFile", { fg = mix(comment, normal, 0.45) }) -- archivo actual
+    set("WinCrumbSel", { fg = warn, bold = true, underline = true }) -- selección pendiente (]f / [f)
+    set("WinCrumbMod", { fg = warn }) -- indicador de modificado
+end
+
 local function winbar_path_mode()
     local full_path = vim.fn.expand "%:p"
     if full_path == "" then
         return "%="
     end
+
+    ensure_crumb_hl()
 
     local git_root_list = vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")
     local root = (vim.v.shell_error == 0 and git_root_list[1] and git_root_list[1] ~= "" and git_root_list[1])
@@ -242,23 +283,22 @@ local function winbar_path_mode()
         local is_last = (i == #items)
         local is_selected = nav_active and state.index == i
 
-        local hl = "St_lspTxt"
+        local hl = is_last and "WinCrumbFile" or "WinCrumb"
         if is_selected then
-            hl = "St_lspWarning" -- selección pendiente (moviéndote con ]f/[f, todavía sin abrir)
-        elseif is_last then
-            hl = "St_NormalMode" -- archivo que estás viendo ahora mismo
+            hl = "WinCrumbSel" -- selección pendiente (moviéndote con ]f/[f, todavía sin abrir)
         end
 
         if is_last then
             local icon = ok and devicons.get_icon(item.label, vim.fn.expand "%:e", { default = true }) or "󰈚"
-            local mod = vim.bo.modified and " 󰏫" or ""
-            table.insert(crumbs, "%#" .. hl .. "# " .. icon .. " " .. item.label .. mod .. " %#St_file_txt#")
+            local mod = vim.bo.modified and "%#WinCrumbMod# 󰏫" or ""
+            table.insert(crumbs, "%#" .. hl .. "#" .. icon .. " " .. item.label .. mod)
         else
-            table.insert(crumbs, "%#" .. hl .. "# 󰉋 " .. item.label .. " %#St_file_txt#")
+            table.insert(crumbs, "%#" .. hl .. "#" .. item.label)
         end
     end
 
-    return "%=" .. table.concat(crumbs, "%#St_file_txt#›") .. "%="
+    -- Alineado a la izquierda (como VS Code); el `%=` final empuja diagnósticos/contador a la derecha
+    return " " .. table.concat(crumbs, " %#WinCrumbSep#›%#WinCrumb# ") .. "%="
 end
 
 local function winbar_files_mode()
