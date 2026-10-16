@@ -247,7 +247,7 @@ local function ensure_crumb_hl()
     set("WinCrumbSep", { fg = mix(comment, bg or 0x000000, 0.35) }) -- separador, aún más tenue
     set("WinCrumbFile", { fg = mix(comment, normal, 0.45) }) -- archivo actual
     set("WinCrumbSel", { fg = warn, bold = true, underline = true }) -- selección pendiente (]f / [f)
-    set("WinCrumbMod", { fg = warn }) -- indicador de modificado
+    set("WinCrumbMod", { fg = mix(normal, bg or 0x000000, 0.55) }) -- indicador de modificado
 end
 
 local function winbar_path_mode()

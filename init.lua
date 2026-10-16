@@ -127,6 +127,7 @@ dofile(vim.g.base46_cache .. "statusline")
 -- ── CONFIGS RESTANTES ────────────────────────────────────────────
 require "options"
 require "autocmds"
+require("dashboard").setup()
 vim.schedule(function()
     require "mappings"
 end)

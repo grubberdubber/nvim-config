@@ -563,3 +563,12 @@ end, { desc = "Sesión: No guardar al salir" })
 
 -- ── YANK RÁPIDO DE TODO EL ARCHIVO ────────────────────────────────
 map("n", "<leader>Y", ":%y+<CR>", { desc = "Yank: Todo el buffer al portapapeles" })
+
+-- ── DASHBOARD PROFESIONAL (IDE HUB) ────────────────────────────────
+map("n", "<leader>;", function()
+    require("dashboard").open()
+end, { desc = "Dashboard: Pantalla principal e IDE Hub" })
+map("n", "<leader>D", function()
+    require("dashboard").open()
+end, { desc = "Dashboard: Pantalla principal e IDE Hub" })
+
