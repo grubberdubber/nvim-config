@@ -75,11 +75,10 @@ o.smartindent = true
 opt.list = true
 opt.listchars = {
     lead = "·",
-    tab = "  ",
+    tab = "··",
     trail = "·",
     nbsp = "␣",
 }
-
 -- ── DIAGNÓSTICOS (Sin íconos en el margen — solo conteo en statusline) ──
 vim.diagnostic.config {
     virtual_text = { prefix = "● ", spacing = 4 },
