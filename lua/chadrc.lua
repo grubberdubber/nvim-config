@@ -59,7 +59,7 @@ M.base46 = {
         BlinkCmpKindOperator = { link = "Operator" },
         BlinkCmpKindTypeParameter = { link = "Type" },
         -- ── ETIQUETAS: < > / </ />  en blanco suave ──
-        ["@tag.delimiter"] = { fg = "#E2E5EA" },
+        ["@tag.delimiter"] = { fg = "#CFE3F7" },
 
         -- ── RAINBOW DELIMITERS (Adaptable automáticamente a cualquier tema) ──
         RainbowDelimiterRed = { link = "Keyword" }, -- Tomará el color de las palabras clave
