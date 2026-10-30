@@ -43,6 +43,7 @@ return {
         -- ── Tab: SOLO skip de cierres (paréntesis/llaves/etiquetas HTML/puntuación) ──
         -- Nunca toca el menú de autocompletado.
         ["<Tab>"] = {
+            "select_next",
             function(_)
                 local line = vim.api.nvim_get_current_line()
                 local col = vim.api.nvim_win_get_cursor(0)[2]
@@ -71,12 +72,12 @@ return {
             "snippet_forward",
             "fallback",
         },
-        -- ── Shift-Tab: recorrer el menú ──────────────────────────────
-        ["<S-Tab>"] = { "select_next", "snippet_backward", "fallback" },
+        -- ── Shift-Tab: subir en el menú (y retroceder en un snippet) ──
+        ["<S-Tab>"] = { "select_prev", "snippet_backward", "fallback" },
+        ["<C-n>"] = { "select_next", "fallback" },
         ["<C-p>"] = { "select_prev", "fallback" },
         ["<Up>"] = { "select_prev", "fallback" },
         ["<Down>"] = { "select_next", "fallback" },
-
         -- ── Enter: SIEMPRE salto de línea, nunca acepta nada ─────────
         ["<CR>"] = { "fallback" },
 
