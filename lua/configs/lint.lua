@@ -10,13 +10,13 @@ lint.linters_by_ft = {
     markdown = { "markdownlint-cli2" },
 }
 
--- ── SINCRONIZACIÓN DE ARGUMENTOS (SQLFLUFF) ───────────────────────
+-- ── ARGUMENT SYNC (SQLFLUFF) ─────────────────────────────────────
 local function sync_sqlfluff_dialect()
     local dialect = vim.b.sql_dialect or "mysql"
     lint.linters.sqlfluff.args = { "lint", "--dialect", dialect, "--format", "json", "-" }
 end
 
--- ── SINCRONIZACIÓN DE ARGUMENTOS GLOBAL PROFESIONAL (STYLELINT) ───
+-- ── GLOBAL ARGUMENT SYNC (STYLELINT) ────────────────────────────
 local function sync_stylelint()
     local filepath = vim.api.nvim_buf_get_name(0)
     if filepath == "" then
@@ -38,7 +38,7 @@ local function sync_stylelint()
     }
 end
 
--- ── FALSOS POSITIVOS CONOCIDOS DE SQLFLUFF (comandos administrativos) ──
+-- ── KNOWN SQLFLUFF FALSE POSITIVES (administrative commands) ────
 local keywords_by_dialect = require "configs.sql_admin_keywords"
 
 local original_parser = lint.linters.sqlfluff.parser
@@ -66,7 +66,7 @@ lint.linters.sqlfluff.parser = function(output, bufnr, cmd)
     return filtered
 end
 
--- ── EJECUCIÓN CENTRALIZADA ────────────────────────────────────────
+-- ── CENTRALIZED EXECUTION ───────────────────────────────────────
 local function lint_sql_aware()
     sync_sqlfluff_dialect()
     sync_stylelint()

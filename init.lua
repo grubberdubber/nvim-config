@@ -1,12 +1,16 @@
 -- ╔══════════════════════════════════════════════════════════════╗
--- ║          NVIM STAFF ENGINEER — init.lua                      ║
--- ║          NvChad v2.5 + 30 lenguajes + DAP + Git + DB         ║
+-- ║          NEOVIM STAFF ENGINEER — init.lua                    ║
+-- ║          NvChad v2.5 + 30 languages + DAP + Git + DB         ║
 -- ╚══════════════════════════════════════════════════════════════╝
 
--- ── FIX PERMISOS MASON (corre PRIMERO, antes de cualquier plugin) ──
--- Resuelve EACCES en binarios de Mason en Kali/Debian/Ubuntu
--- sin necesidad de ningún chmod manual post-instalación
--- Usamos system (síncrono) para garantizar que corre ANTES que LSP
+-- High-resolution start timestamp used by the dashboard to report real
+-- startup time (measured from this line to the first dashboard render).
+vim.g.nvim_start_hrtime = (vim.uv or vim.loop).hrtime()
+
+-- ── MASON PERMISSION FIX (runs first, before any plugin) ─────────
+-- Resolves EACCES on Mason binaries on Kali/Debian/Ubuntu without any
+-- manual post-install chmod. Synchronous on purpose: it must finish
+-- before the first LSP process starts.
 local mason_bin = vim.fn.stdpath "data" .. "/mason/bin"
 if vim.fn.isdirectory(mason_bin) == 1 then
     vim.fn.system { "chmod", "-R", "+x", mason_bin }
@@ -15,7 +19,7 @@ end
 vim.g.base46_cache = vim.fn.stdpath "data" .. "/base46/"
 vim.g.mapleader = " "
 
--- ── BOOTSTRAP LAZY.NVIM ───────────────────────────────────────────
+-- ── LAZY.NVIM BOOTSTRAP ──────────────────────────────────────────
 local lazypath = vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
     vim.fn.system {
@@ -29,9 +33,9 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- ── CARGA DE PLUGINS ─────────────────────────────────────────────
--- NvChad con priority=1000 garantiza que nvconfig esté en rtp
--- antes de que mappings.lua lo requiera
+-- ── PLUGIN LOADING ───────────────────────────────────────────────
+-- NvChad uses priority=1000 so nvconfig is on the runtimepath before
+-- mappings.lua requires it.
 require("lazy").setup({
     {
         "NvChad/NvChad",
@@ -43,12 +47,12 @@ require("lazy").setup({
     { import = "plugins" },
 }, {
     defaults = { lazy = true },
-    git = { timeout = 900 }, -- 15 min: avante compila varios crates en Rust
+    git = { timeout = 900 }, -- 15 min: avante compiles several Rust crates
     install = { colorscheme = { "nvchad" } },
     ui = { icons = { ft = "", lazy = "󰂠 ", loaded = "", not_loaded = "" } },
     performance = {
         rtp = {
-            -- Deshabilita plugins de Vim que no necesitamos (mejora tiempo de inicio)
+            -- Disable unused Vim runtime plugins (faster startup)
             disabled_plugins = {
                 "2html_plugin",
                 "tohtml",
@@ -81,14 +85,14 @@ require("lazy").setup({
     },
 })
 
--- ── DESACTIVAR AUTOPAIRS (sin cierres automáticos — control total) ─
+-- ── DISABLE AUTOPAIRS (no automatic closers, full control) ───────
 vim.g.autopairs_enabled = false
 
--- ── BREAKPOINTS VISUALES DAP ─────────────────────────────────────
---   ●  rojo    = breakpoint normal        (estándar IntelliJ / VS Code)
---   ◉  naranja = breakpoint condicional
---   ◆  azul    = log point (imprime sin pausar)
---   ▶  verde   = línea activa del debugger
+-- ── DAP BREAKPOINT GLYPHS ────────────────────────────────────────
+--   ●  red    = regular breakpoint (IntelliJ / VS Code convention)
+--   ◉  orange = conditional breakpoint
+--   ◆  blue   = log point (prints without pausing)
+--   ▶  green  = current debugger line
 vim.fn.sign_define("DapBreakpoint", {
     text = "●",
     texthl = "DiagnosticError",
@@ -120,11 +124,11 @@ vim.fn.sign_define("DapStopped", {
     numhl = "DiagnosticOk",
 })
 
--- ── TEMAS BASE ───────────────────────────────────────────────────
+-- ── BASE THEMES ──────────────────────────────────────────────────
 dofile(vim.g.base46_cache .. "defaults")
 dofile(vim.g.base46_cache .. "statusline")
 
--- ── CONFIGS RESTANTES ────────────────────────────────────────────
+-- ── REMAINING MODULES ────────────────────────────────────────────
 require "options"
 require "autocmds"
 require("dashboard").setup()
@@ -132,11 +136,11 @@ vim.schedule(function()
     require "mappings"
 end)
 
--- ── AUTO-INSTALACIÓN DE DEPENDENCIAS DE LINTERS (STYLELINT) ──────
+-- ── LINTER DEPENDENCY BOOTSTRAP (STYLELINT) ──────────────────────
 local nvim_dir = vim.fn.stdpath "config"
 local node_modules = nvim_dir .. "/node_modules"
 
 if vim.fn.isdirectory(node_modules) == 0 then
-    vim.notify("Instalando dependencias de linters en ~/.config/nvim...", vim.log.levels.INFO)
+    vim.notify("Installing linter dependencies in ~/.config/nvim...", vim.log.levels.INFO)
     vim.fn.jobstart({ "npm", "install" }, { cwd = nvim_dir })
 end

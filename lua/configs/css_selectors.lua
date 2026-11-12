@@ -1,20 +1,20 @@
--- Fuente de blink.cmp: clases, ids y variables CSS — BIDIRECCIONAL y multi-lenguaje.
+-- blink.cmp source: CSS classes, ids and variables, bidirectional and multi-language.
 --
---  · DEFINICIONES: *.css/scss/sass/less/pcss + bloques <style> de html/vue/svelte/astro/php...
---    (parseados y cacheados por mtime).
+--  · DEFINITIONS: *.css/scss/sass/less/pcss + <style> blocks in html/vue/svelte/astro/php...
+--    (parsed and cached by mtime).
 --  · USOS: class=, className=, class_=, :class="{...}", class:name (Svelte), clsx()/cn(),
 --    classList.add(), addClass(), getElementById(), querySelector(), $(), By.ID,
 --    hx-target="#x", .Class("x") (Go/Swift), classes!() (Rust), @class() (Blade)...
---    en TODO el código del proyecto (ripgrep, una pasada async). Entiende strings con
---    comillas escapadas (\"), como en C, C++, Java, C#, Go, Kotlin, Swift, Dart y Rust.
+--    across the WHOLE project (ripgrep, one async pass). Understands strings with
+--    escaped quotes (\"), as in C, C++, Java, C#, Go, Kotlin, Swift, Dart and Rust.
 --
--- Todo vive en un índice por proyecto, con caché. Se calienta al abrir archivos y se
--- reindexa (con espera) al guardar un CSS o un archivo de código.
+-- Everything lives in a per-project index with a cache. It warms up when files open and is
+-- rebuilt (debounced) when a CSS or code file is saved.
 local source = {}
 local uv = vim.uv or vim.loop
 
 -- ── Ajustes ─────────────────────────────────────────────────────────
-local SCAN_USAGE = true -- false = solo definiciones CSS (más ligero)
+local SCAN_USAGE = true -- false = CSS definitions only (lighter)
 local STALE_MS = 30000
 local DEBOUNCE_MS = 600
 local MAX_STYLE_FILES = 3000
@@ -44,7 +44,7 @@ local function is_root_marker(name)
 end
 
 local STYLE_FT = { css = true, scss = true, less = true, sass = true, postcss = true }
--- Archivos donde puede haber un bloque <style> (y completar . # dentro)
+-- Files that may contain a <style> block (completing . # inside it)
 local EMBED_FT = {
     html = true,
     vue = true,
@@ -60,7 +60,7 @@ local EMBED_FT = {
 }
 local EMBED_EXTS = "html,htm,xhtml,vue,svelte,astro,php,phtml,twig,erb,ejs,hbs,njk,jinja,j2,cshtml,razor"
 local SVELTE_FT = { svelte = true, astro = true }
--- Aquí `id: "x"` / `'id' => 'x'` sí es un id HTML (en otros lenguajes suele ser un dato)
+-- Here `id: "x"` / `'id' => 'x'` really is an HTML id (in other languages it is usually plain data)
 local ID_COLON_FT = { ruby = true, eruby = true, haml = true, slim = true, php = true, lua = true }
 
 local DISABLED_FT = {
@@ -81,8 +81,8 @@ local DISABLED_FT = {
     TelescopePrompt = true,
 }
 
--- Archivos de código donde se buscan USOS. No se incluyen sh/bash/ps1: `$("...")` es
--- sustitución de comandos ahí, no jQuery, y solo generaría ruido.
+-- Code files scanned for USAGES. sh/bash/ps1 are excluded: `$("...")` is
+-- command substitution there, not jQuery, and would only add noise.
 local CODE_EXTS = {
     "html",
     "htm",
@@ -163,11 +163,11 @@ local EXCLUDES = {
     "!**/.git/**",
 }
 
--- ── Patrones de ripgrep (regex de Rust) para encontrar USOS ─────────
--- Comilla con hasta 2 barras delante: "  \"  \\"  (strings escapados de C/Java/Go/...)
+-- ── Ripgrep patterns (Rust regex) used to find USAGES ─────────────
+-- Quote with up to 2 leading backslashes: "  \"  \\"  (escaped C/Java/Go/... strings)
 local Q = [=[\\{0,2}["'`]]=]
 local STR = Q .. [=[[^"'`\\\n]*]=] .. Q -- "texto"
-local STRS = "(?:" .. STR .. [=[[\s,]*)+]=] -- uno o más strings separados por comas
+local STRS = "(?:" .. STR .. [=[[\s,]*)+]=] -- one or more comma-separated strings
 
 local USE_PATTERNS = {
     -- class="a b"  className={`a`}  class_="a"  class: "a"  klass:  cssClass=
@@ -186,7 +186,7 @@ local USE_PATTERNS = {
     [=[\bclasses\s*=\s*\w+\(\s*]=] .. STRS,
     -- clsx("a", "b")  cn(...)  classnames(...)  twMerge(...)  cva(...)
     [=[\b(?:clsx|cn|classnames|classNames|cx|twMerge|twJoin|cva|tv)\(\s*]=] .. STRS,
-    -- API de clases
+    -- Class API
     [=[\b(?:classList|classes)\.\w+\(\s*]=] .. STRS,
     [=[\b(?:addClass|removeClass|toggleClass|hasClass|getElementsByClassName|getElementsByClass)\(\s*]=] .. STRS,
     [=[(?:\.class|\bClass)\(\s*]=] .. STRS, -- Go (gomponents), Swift (Plot)
@@ -203,7 +203,7 @@ local USE_PATTERNS = {
     [=[\b(?:setAttribute|attr|setattr)\(\s*["'](?:class|id)["']\s*,\s*]=] .. STR,
 }
 
--- head (en minúsculas) -> qué se extrae
+-- head (lowercase) -> what gets extracted
 local HEAD_KIND = {
     class = "class",
     classname = "class",
@@ -259,7 +259,7 @@ local HEAD_KIND = {
 
 local cache = {} -- root -> { root, files, uses, items, sets, tailwind, at, scanning, dirty }
 
--- ── Parser de CSS ───────────────────────────────────────────────────
+-- ── CSS parser ───────────────────────────────────────────────────
 local function parse(text)
     local tailwind = text:find("@tailwind", 1, true) ~= nil or text:find "@import%s+[\"']tailwindcss" ~= nil
     text = text:gsub("/%*.-%*/", " ")
@@ -286,7 +286,7 @@ local function parse(text)
     return classes, ids, vars, tailwind
 end
 
--- ── Extracción de USOS desde la salida de ripgrep ───────────────────
+-- ── Extracting USAGES from ripgrep output ───────────────────
 local function valid(tok)
     return #tok > 0 and #tok <= 64 and tok:match "^%-?[%a_][%w_-]*$" ~= nil
 end
@@ -398,7 +398,7 @@ local function collect(m, u)
     end
 end
 
--- ── Índice ──────────────────────────────────────────────────────────
+-- ── Index ──────────────────────────────────────────────────────────
 local function rebuild(c)
     local seen = { class = {}, id = {}, var = {} }
     c.tailwind = c.tailwind_cfg or false
@@ -418,7 +418,7 @@ local function rebuild(c)
     end
     for rel, u in pairs(c.uses) do
         local class_sets = { u.api_classes }
-        -- En proyectos Tailwind, class="flex px-4" son utilidades, no clases propias
+        -- In Tailwind projects, class="flex px-4" are utilities, not project classes
         if not c.tailwind then
             class_sets[#class_sets + 1] = u.classes
         end
@@ -477,7 +477,7 @@ local function list_lines(s)
     return out
 end
 
--- Definiciones: hojas de estilo + bloques <style> embebidos
+-- Definitions: stylesheets + embedded <style> blocks
 local function scan_styles(c, done)
     local alive = {}
 
@@ -580,7 +580,7 @@ local function scan_styles(c, done)
     end
 end
 
--- Usos: una sola pasada de ripgrep sobre todo el código
+-- Usages: a single ripgrep pass over the whole codebase
 local function scan_usage(c, done)
     if not SCAN_USAGE then
         c.uses = {}
@@ -659,7 +659,7 @@ local function refresh(c)
     scan_usage(c, done)
 end
 
--- Raíz del proyecto, cacheada por buffer (se invalida al renombrar/guardar)
+-- Project root, cached per buffer (invalidated on rename/save)
 local root_cache = {}
 local function project_root()
     local buf = vim.api.nvim_get_current_buf()
@@ -683,8 +683,8 @@ local function ensure(root, force)
     return c
 end
 
--- ── Detección de contexto (sirve para todos los lenguajes) ──────────
--- Qp: comilla con barras opcionales (\" en strings escapados)   Cap: lo tecleado dentro
+-- ── Context detection (works for every language) ──────────
+-- Qp: quote with optional backslashes (\" in escaped strings)   Cap: what was typed inside
 local Qp = "\\*[\"'`]"
 local Cap = "([^\"'`\\]*)$"
 local OPEN = "[{(@%[]?%s*" .. Qp
@@ -763,7 +763,7 @@ for _, name in ipairs {
 } do
     ID_PATS[#ID_PATS + 1] = "[^%w_%-:]" .. esc(name) .. "%s*=%s*" .. OPEN .. Cap
 end
--- Atributos ambiguos (for, list, form...): solo dentro de una etiqueta <...
+-- Ambiguous attributes (for, list, form...): only inside a <... tag
 for _, name in ipairs { "for", "list", "form", "headers" } do
     ID_PATS[#ID_PATS + 1] = "<[%w_%-]+[^<>]*%s" .. name .. "%s*=%s*" .. Qp .. Cap
 end
@@ -817,7 +817,7 @@ local function last_pos(s, needle)
     end
 end
 
--- ¿El cursor está dentro de un bloque <style> de un html/vue/svelte/...?
+-- Is the cursor inside a <style> block of an html/vue/svelte/... file?
 local function in_style_block(b, row)
     local lb = b:lower()
     local s, e = last_pos(lb, "<style"), last_pos(lb, "</style")
@@ -842,7 +842,7 @@ local function detect(b, row)
     local ft = vim.bo.filetype
     row = row or vim.api.nvim_win_get_cursor(0)[1]
 
-    -- Dentro de CSS (archivo .css o bloque <style>)
+    -- Inside CSS (a .css file or a <style> block)
     if STYLE_FT[ft] or (EMBED_FT[ft] and in_style_block(b, row)) then
         local seg = b:match "([^{};]*)$"
         local v = seg:match "var%(%s*(%-*[%w_-]*)$"
@@ -920,7 +920,7 @@ local function detect(b, row)
     return nil
 end
 
--- ── API pública para blink.lua (iconos y deduplicado) ───────────────
+-- ── Public API for blink.lua (icons and deduplication) ───────────────
 function source.kind_at(line_before, row)
     return (detect(line_before, row))
 end
@@ -930,10 +930,10 @@ function source.has(kind, name)
     return c ~= nil and c.sets[kind] ~= nil and c.sets[kind][name] == true
 end
 
--- Solo para pruebas
+-- Test-only internals
 source._internal = { detect = detect, collect = collect, cache = cache, ensure = ensure, project_root = project_root }
 
--- ── API de blink.cmp ────────────────────────────────────────────────
+-- ── blink.cmp API ────────────────────────────────────────────────
 function source.new(opts)
     local group = vim.api.nvim_create_augroup("CssSelectorsIndex", { clear = true })
     local timer = uv.new_timer()
@@ -1005,7 +1005,7 @@ function source:get_completions(ctx, callback)
             items[#items + 1] = {
                 label = e.name,
                 kind = KIND[kind],
-                sel_kind = kind, -- marca propia: de aquí sale el icono
+                sel_kind = kind, -- custom marker: the icon comes from here
                 textEdit = { newText = e.name, range = range },
                 labelDetails = { detail = e.def and "" or " ·not in CSS", description = e.rel },
             }

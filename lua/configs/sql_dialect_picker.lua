@@ -1,14 +1,14 @@
--- Al abrir un archivo SQL, pregunta con qué motor vas a trabajar.
--- La elección queda en vim.b.sql_dialect (por buffer) y controla:
---  1) el dialecto que usa sqlfluff para lint
---  2) qué lista de palabras administrativas se resalta/autocompleta
+-- When a SQL file opens, ask which engine the buffer targets.
+-- The choice is stored in vim.b.sql_dialect (per buffer) and controls:
+--  1) the dialect sqlfluff uses for linting
+--  2) which administrative keyword list is highlighted/completed
 local dialect_options = {
     { label = "MySQL", sqlfluff = "mysql" },
     { label = "MariaDB", sqlfluff = "mysql" }, -- sqlfluff no distingue MariaDB de MySQL
     { label = "PostgreSQL", sqlfluff = "postgres" },
     { label = "SQLite3", sqlfluff = "sqlite" },
     { label = "MSSQL (SQL Server)", sqlfluff = "tsql" },
-    { label = "H2", sqlfluff = "ansi" }, -- sqlfluff no tiene dialecto H2 dedicado, usa ANSI genérico
+    { label = "H2", sqlfluff = "ansi" }, -- sqlfluff has no dedicated H2 dialect, use generic ANSI
     { label = "Vertica", sqlfluff = "vertica" },
 }
 
@@ -20,10 +20,10 @@ vim.api.nvim_create_autocmd("FileType", {
     callback = function(args)
         local bufnr = args.buf
 
-        -- Evita prompts duplicados: FileType puede dispararse varias veces
-        -- para el mismo buffer en un instante (detección + adjunto de LSP, etc.)
-        -- Por eso marcamos la guardia YA, de forma síncrona, antes de programar
-        -- el menú asíncrono — no esperamos a que el usuario termine de elegir.
+        -- Prevent duplicate prompts: FileType can fire more than once
+        -- for the same buffer at once (detection + LSP attach, etc.)
+        -- That is why the guard is set NOW, synchronously, before scheduling
+        -- the async menu; we do not wait for the user to finish choosing.
         if vim.b[bufnr].sql_dialect or vim.b[bufnr].sql_dialect_prompted then
             return
         end
@@ -31,7 +31,7 @@ vim.api.nvim_create_autocmd("FileType", {
 
         vim.schedule(function()
             vim.ui.select(dialect_options, {
-                prompt = "¿Con qué motor de base de datos vas a trabajar en este archivo?",
+                prompt = "Which database engine does this file target?",
                 format_item = function(item)
                     return item.label
                 end,

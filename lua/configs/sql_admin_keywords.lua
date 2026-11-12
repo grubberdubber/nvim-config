@@ -1,6 +1,6 @@
--- Tabla centralizada de comandos administrativos por dialecto SQL.
--- La usan tanto el highlight (sql_admin_highlight.lua) como el
--- autocompletado (blink_sql_admin_source.lua), así nunca se desincronizan.
+-- Centralized table of administrative commands per SQL dialect.
+-- Shared by the highlighter (sql_admin_highlight.lua) and the
+-- completion (blink_sql_admin_source.lua) so they never drift apart.
 return {
     mysql = {
         "SHOW",
@@ -111,7 +111,7 @@ return {
         "TRUNCATE TABLE",
     },
 
-    -- H2/Vertica: cobertura best-effort, menos exhaustiva que las anteriores.
+    -- H2/Vertica: best-effort coverage, less exhaustive than the others.
     h2 = {
         "SET",
         "SHUTDOWN",

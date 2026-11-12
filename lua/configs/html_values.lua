@@ -1,6 +1,6 @@
--- Fuente de blink.cmp: valores enumerados de atributos HTML (WHATWG).
--- Sirve en html, php, vue, svelte, jsx/tsx y xml. Los nombres se comparan en
--- minúsculas, así que también cubre JSX (httpEquiv, autoComplete, crossOrigin...).
+-- blink.cmp source: enumerated HTML attribute values (WHATWG).
+-- Works in html, php, vue, svelte, jsx/tsx and xml. Names are compared in
+-- lowercase, so it also covers JSX (httpEquiv, autoComplete, crossOrigin...).
 local source = {}
 
 local FILETYPES = {
@@ -29,7 +29,7 @@ local REFERRER =
     list "no-referrer no-referrer-when-downgrade origin origin-when-cross-origin same-origin strict-origin strict-origin-when-cross-origin unsafe-url"
 local MIME_IMG = { "image/png", "image/jpeg", "image/webp", "image/avif", "image/svg+xml", "image/gif", "image/x-icon" }
 
--- ── 1. Atributos que valen para cualquier etiqueta (o comunes a varias) ──
+-- ── 1. Attributes valid on any tag (or shared by several) ────────
 local GLOBAL = {
     -- Globales
     autocapitalize = list "off none on sentences words characters",
@@ -74,7 +74,7 @@ local GLOBAL = {
 
     autocomplete = list "on off name honorific-prefix given-name additional-name family-name honorific-suffix nickname email username new-password current-password one-time-code organization-title organization street-address address-line1 address-line2 address-line3 address-level4 address-level3 address-level2 address-level1 country country-name postal-code cc-name cc-given-name cc-additional-name cc-family-name cc-number cc-exp cc-exp-month cc-exp-year cc-csc cc-type transaction-currency transaction-amount language bday bday-day bday-month bday-year sex url photo tel tel-country-code tel-national tel-area-code tel-local tel-extension impp shipping billing home work mobile fax pager webauthn",
 
-    -- Específicos de una sola etiqueta (no chocan con otras)
+    -- Tag-specific values (they do not clash with others)
     shape = list "default rect circle poly", -- <area>
     preload = list "none metadata auto", -- <audio> <video>
     scope = list "row col rowgroup colgroup", -- <td> <th>
@@ -84,7 +84,7 @@ local GLOBAL = {
     charset = { "UTF-8", "ISO-8859-1" },
     ["http-equiv"] = list "content-type default-style refresh x-ua-compatible content-security-policy", -- <meta>
 
-    -- Accesibilidad (extra, no es HTML puro)
+    -- Accessibility (extra, not pure HTML)
     role = list "alert alertdialog application article banner button cell checkbox columnheader combobox complementary contentinfo definition dialog directory document feed figure form grid gridcell group heading img link list listbox listitem log main marquee math menu menubar menuitem menuitemcheckbox menuitemradio navigation none note option presentation progressbar radio radiogroup region row rowgroup rowheader scrollbar search searchbox separator slider spinbutton status switch tab table tablist tabpanel term textbox timer toolbar tooltip tree treegrid treeitem",
     ["aria-live"] = list "off polite assertive",
     ["aria-hidden"] = list "true false",
@@ -101,7 +101,7 @@ local GLOBAL = {
     ["aria-sort"] = list "none ascending descending other",
 }
 
--- ── 2. Atributos que cambian según la etiqueta (tienen prioridad) ────────
+-- ── 2. Attributes that change per tag (these take priority) ────────
 local BY_TAG = {
     meta = {
         name = list "viewport description keywords author robots theme-color color-scheme generator referrer creator publisher format-detection handheldfriendly mobileoptimized googlebot",
@@ -131,7 +131,7 @@ local BY_TAG = {
     },
 }
 
--- ── 3. <meta content="..."> depende de name= / http-equiv= ───────────────
+-- ── 3. <meta content="..."> depends on name= / http-equiv= ────────
 local META_CONTENT = {
     { "name", "viewport", { VIEWPORT, "width=device-width, initial-scale=1, viewport-fit=cover" } },
     { "name", "robots", ROBOTS },
@@ -159,7 +159,7 @@ function source:get_trigger_characters()
     return { '"', "'" }
 end
 
--- Texto desde unas líneas atrás hasta el cursor (etiquetas en varias líneas)
+-- Text from a few lines back to the cursor (multi-line tags)
 local function text_before(ctx)
     local row = ctx.cursor[1]
     local first = math.max(0, row - 6)

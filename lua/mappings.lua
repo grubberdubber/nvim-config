@@ -3,245 +3,277 @@ require "nvchad.mappings"
 
 local map = vim.keymap.set
 
--- ── CONFIGURACIÓN DE CODEIUM (IA EXCLUSIVA EN CTRL+G) ────────────
+-- ── AI COMPLETION (CODEIUM, CTRL+G ONLY) ─────────────────────────
 vim.api.nvim_set_hl(0, "CodeiumSuggestion", { fg = "#5c6370", italic = true })
 map("i", "<C-g>", function()
     return vim.fn["codeium#Accept"]()
-end, { expr = true, silent = true, desc = "Codeium: Aceptar sugerencia" })
+end, { expr = true, silent = true, desc = "Codeium: accept suggestion" })
 map("i", "<C-]>", function()
     return vim.fn["codeium#Clear"]()
-end, { expr = true, silent = true, desc = "Codeium: Limpiar sugerencia" })
+end, { expr = true, silent = true, desc = "Codeium: clear suggestion" })
 
--- ── MAPEOS BASE ──────────────────────────────────────────────────
-map("n", ";", ":", { desc = "CMD: modo comando" })
-map("i", "jk", "<ESC>", { desc = "ESC rápido desde Insert" })
-map("n", "<C-s>", "<cmd>w<CR>", { desc = "Guardar archivo" })
-map("i", "<C-s>", "<ESC><cmd>w<CR>", { desc = "Guardar desde Insert" })
-map("n", "<C-q>", "<cmd>q<CR>", { desc = "Cerrar ventana" })
+-- ── CORE ─────────────────────────────────────────────────────────
+map("n", ";", ":", { desc = "Command: enter command-line mode" })
+map("i", "jk", "<ESC>", { desc = "Insert: exit to normal mode" })
+map("n", "<C-s>", "<cmd>w<CR>", { desc = "File: save" })
+map("i", "<C-s>", "<ESC><cmd>w<CR>", { desc = "File: save from insert mode" })
+map("n", "<C-q>", "<cmd>q<CR>", { desc = "Window: close" })
 
--- j/k "wrap-aware" que RESPETA los conteos (5j, 10k siguen funcionando
--- como movimiento real de línea; sin conteo, se mueven por línea de
--- pantalla — arregla el bug clásico de mapear gj/gk a secas).
-map("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, desc = "Bajar (wrap-aware, respeta conteo)" })
-map("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, desc = "Subir (wrap-aware, respeta conteo)" })
+-- Wrap-aware j/k that still honours counts: with a count (5j) the motion
+-- stays line-based; without one it moves by screen line.
+map("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, desc = "Move: down (wrap-aware, keeps count)" })
+map("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, desc = "Move: up (wrap-aware, keeps count)" })
 
-map("v", "<A-j>", ":m '>+1<CR>gv=gv", { desc = "Mover selección abajo" })
-map("v", "<A-k>", ":m '<-2<CR>gv=gv", { desc = "Mover selección arriba" })
-map("n", "<A-j>", ":m .+1<CR>==", { desc = "Mover línea abajo" })
-map("n", "<A-k>", ":m .-2<CR>==", { desc = "Mover línea arriba" })
-map("v", "<", "<gv", { desc = "Indentar izquierda" })
-map("v", ">", ">gv", { desc = "Indentar derecha" })
-map("v", "p", '"_dP', { desc = "Pegar sin perder registro" })
+map("v", "<A-j>", ":m '>+1<CR>gv=gv", { desc = "Move: selection down" })
+map("v", "<A-k>", ":m '<-2<CR>gv=gv", { desc = "Move: selection up" })
+map("n", "<A-j>", ":m .+1<CR>==", { desc = "Move: line down" })
+map("n", "<A-k>", ":m .-2<CR>==", { desc = "Move: line up" })
+map("v", "<", "<gv", { desc = "Indent: left" })
+map("v", ">", ">gv", { desc = "Indent: right" })
+map("v", "p", '"_dP', { desc = "Paste: keep register" })
 
-map("n", "<C-h>", "<C-w>h", { desc = "Ir a split izquierdo" })
-map("n", "<C-l>", "<C-w>l", { desc = "Ir a split derecho" })
-map("n", "<C-j>", "<C-w>j", { desc = "Ir a split abajo" })
-map("n", "<C-k>", "<C-w>k", { desc = "Ir a split arriba" })
+map("n", "<C-h>", "<C-w>h", { desc = "Window: focus left" })
+map("n", "<C-l>", "<C-w>l", { desc = "Window: focus right" })
+map("n", "<C-j>", "<C-w>j", { desc = "Window: focus below" })
+map("n", "<C-k>", "<C-w>k", { desc = "Window: focus above" })
 
-map("n", "<Tab>", "<cmd>bnext<CR>", { desc = "Siguiente buffer" })
-map("n", "<S-Tab>", "<cmd>bprevious<CR>", { desc = "Buffer anterior" })
-map("n", "<leader>x", "<cmd>bdelete<CR>", { desc = "Cerrar buffer actual" })
+map("n", "<Tab>", "<cmd>bnext<CR>", { desc = "Buffer: next" })
+map("n", "<S-Tab>", "<cmd>bprevious<CR>", { desc = "Buffer: previous" })
+map("n", "<leader>x", "<cmd>bdelete<CR>", { desc = "Buffer: delete current" })
 
 -- ── LSP ──────────────────────────────────────────────────────────
-map("n", "gd", vim.lsp.buf.definition, { desc = "LSP: Ir a definición" })
-map("n", "gD", vim.lsp.buf.declaration, { desc = "LSP: Ir a declaración" })
-map("n", "gR", vim.lsp.buf.references, { desc = "LSP: Ver referencias" })
-map("n", "gi", vim.lsp.buf.implementation, { desc = "LSP: Ver implementación" })
-map("n", "K", vim.lsp.buf.hover, { desc = "LSP: Hover docs" })
-map("n", "<leader>rn", vim.lsp.buf.rename, { desc = "LSP: Renombrar símbolo" })
-map("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "LSP: Code actions" })
-map("n", "<leader>lf", vim.lsp.buf.format, { desc = "LSP: Formatear archivo" })
-map("n", "[d", vim.diagnostic.goto_prev, { desc = "LSP: Diagnóstico anterior" })
-map("n", "]d", vim.diagnostic.goto_next, { desc = "LSP: Diagnóstico siguiente" })
-map("n", "<leader>df", vim.diagnostic.open_float, { desc = "LSP: Ver diagnóstico flotante" })
+map("n", "gd", vim.lsp.buf.definition, { desc = "LSP: go to definition" })
+map("n", "gD", vim.lsp.buf.declaration, { desc = "LSP: go to declaration" })
+map("n", "gR", vim.lsp.buf.references, { desc = "LSP: list references" })
+map("n", "gi", vim.lsp.buf.implementation, { desc = "LSP: go to implementation" })
+map("n", "K", vim.lsp.buf.hover, { desc = "LSP: hover documentation" })
+map("n", "<leader>rn", vim.lsp.buf.rename, { desc = "LSP: rename symbol" })
+map("n", "<leader>ca", vim.lsp.buf.code_action, { desc = "LSP: code actions" })
+map("n", "<leader>lf", vim.lsp.buf.format, { desc = "LSP: format file" })
+map("n", "[d", vim.diagnostic.goto_prev, { desc = "Diagnostics: previous" })
+map("n", "]d", vim.diagnostic.goto_next, { desc = "Diagnostics: next" })
+map("n", "<leader>df", vim.diagnostic.open_float, { desc = "Diagnostics: show float" })
 
--- ── SÍMBOLOS DEL PROYECTO (Telescope + LSP) ──────────────────────
-map("n", "<leader>ss", "<cmd>Telescope lsp_document_symbols<CR>", { desc = "Telescope: Símbolos del archivo actual" })
-map(
-    "n",
-    "<leader>sS",
-    "<cmd>Telescope lsp_workspace_symbols<CR>",
-    { desc = "Telescope: Símbolos de todo el proyecto" }
-)
+-- ── SYMBOLS (TELESCOPE + LSP) ────────────────────────────────────
+map("n", "<leader>ss", "<cmd>Telescope lsp_document_symbols<CR>", { desc = "Symbols: document" })
+map("n", "<leader>sS", "<cmd>Telescope lsp_workspace_symbols<CR>", { desc = "Symbols: workspace" })
 
--- ── QUICKFIX (resultados de :grep, Spectre, etc.) ────────────────
-map("n", "]q", "<cmd>cnext<CR>zz", { desc = "Quickfix: Siguiente resultado" })
-map("n", "[q", "<cmd>cprev<CR>zz", { desc = "Quickfix: Resultado anterior" })
+-- ── QUICKFIX ─────────────────────────────────────────────────────
+map("n", "]q", "<cmd>cnext<CR>zz", { desc = "Quickfix: next item" })
+map("n", "[q", "<cmd>cprev<CR>zz", { desc = "Quickfix: previous item" })
 
--- ── PLUGINS VARIOS ───────────────────────────────────────────────
-map("n", "<leader>sr", "<cmd>SnipRun<CR>", { desc = "Sniprun: Ejecutar línea" })
-map("v", "<leader>sr", "<cmd>'<,'>SnipRun<CR>", { desc = "Sniprun: Ejecutar bloque" })
-map("n", "<leader>sc", "<cmd>SnipReset<CR>", { desc = "Sniprun: Limpiar output" })
+-- ── CODE EXECUTION ───────────────────────────────────────────────
+map("n", "<leader>sr", "<cmd>SnipRun<CR>", { desc = "SnipRun: run line" })
+map("v", "<leader>sr", "<cmd>'<,'>SnipRun<CR>", { desc = "SnipRun: run selection" })
+map("n", "<leader>sc", "<cmd>SnipReset<CR>", { desc = "SnipRun: clear output" })
 
-map("n", "<leader>ro", "<cmd>IronRepl<CR>", { desc = "Iron: Abrir REPL" })
-map("n", "<leader>rr", "<cmd>IronRestart<CR>", { desc = "Iron: Reiniciar REPL" })
+map("n", "<leader>ro", "<cmd>IronRepl<CR>", { desc = "REPL: open" })
+map("n", "<leader>rr", "<cmd>IronRestart<CR>", { desc = "REPL: restart" })
 map("n", "<leader>rc", function()
     require("iron.core").close_repl()
-end, { desc = "Iron: Cerrar REPL" })
+end, { desc = "REPL: close" })
 map("n", "<leader>rs", function()
     require("iron.core").send_line()
-end, { desc = "Iron: Enviar línea al REPL" })
+end, { desc = "REPL: send line" })
 map("v", "<leader>rs", function()
     require("iron.core").visual_send()
-end, { desc = "Iron: Enviar bloque al REPL" })
+end, { desc = "REPL: send selection" })
 
-map("n", "<leader>db", "<cmd>DBUIToggle<CR>", { desc = "DB: Toggle UI base de datos" })
+-- ── DATABASES (VIM-DADBOD) ───────────────────────────────────────
+map("n", "<leader>db", "<cmd>DBUI<CR>", { desc = "Database: focus or open UI" })
+map("n", "<leader>dq", "<cmd>%DB<CR>", { desc = "Database: execute buffer" })
+map("v", "<leader>dq", ":'<,'>DB<CR>", { desc = "Database: execute selection" })
 
--- ── EJECUCIÓN DE QUERIES SQL (DADBOD) ────────────────────────────
-map("n", "<leader>dq", "<cmd>%DB<CR>", { desc = "DB: Ejecutar buffer completo" })
-map("v", "<leader>dq", ":'<,'>DB<CR>", { desc = "DB: Ejecutar selección" })
+-- ── TROUBLE (TRIAGE PANELS) ──────────────────────────────────────
+map(
+    "n",
+    "<leader>tt",
+    "<cmd>Trouble diagnostics toggle focus=true win.position=bottom<CR>",
+    { desc = "Trouble: project diagnostics" }
+)
+map(
+    "n",
+    "<leader>tx",
+    "<cmd>Trouble diagnostics toggle focus=true win.position=bottom<CR>",
+    { desc = "Trouble: project diagnostics" }
+)
+map(
+    "n",
+    "<leader>td",
+    "<cmd>Trouble diagnostics toggle focus=true filter.buf=0<CR>",
+    { desc = "Trouble: buffer diagnostics" }
+)
+map("n", "<leader>tq", "<cmd>Trouble qflist toggle<CR>", { desc = "Trouble: quickfix list" })
+map("n", "<leader>tl", "<cmd>Trouble loclist toggle<CR>", { desc = "Trouble: location list" })
+map(
+    "n",
+    "<leader>ts",
+    "<cmd>Trouble symbols toggle focus=false win.position=right<CR>",
+    { desc = "Trouble: document symbols" }
+)
+map(
+    "n",
+    "<leader>tL",
+    "<cmd>Trouble lsp toggle focus=false win.position=right<CR>",
+    { desc = "Trouble: LSP definitions/references" }
+)
+map("n", "<leader>ft", "<cmd>TodoTelescope<CR>", { desc = "TODO/FIXME: search the project" })
 
--- Trouble
-map("n", "<leader>tx", "<cmd>Trouble diagnostics toggle<CR>", { desc = "Trouble: Toggle panel" })
-map("n", "<leader>tw", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", { desc = "Trouble: Workspace" })
-map("n", "<leader>td", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", { desc = "Trouble: Documento" })
+map("n", "<leader>gg", "<cmd>LazyGit<CR>", { desc = "Git: open Lazygit" })
+map("n", "<leader>b", "<cmd>Telescope buffers<CR>", { desc = "Buffers: pick with Telescope" })
 
-map("n", "<leader>gg", "<cmd>LazyGit<CR>", { desc = "Git: Abrir Lazygit" })
-map("n", "<leader>b", "<cmd>Telescope buffers<CR>", { desc = "Telescope: Listar buffers" })
-
--- ── DAP DEBUGGER ─────────────────────────────────────────────────
+-- ── DEBUGGER (DAP) ───────────────────────────────────────────────
 map("n", "<F5>", function()
     require("dap").continue()
-end, { desc = "DAP: Iniciar / Continuar" })
+end, { desc = "Debug: start / continue" })
 map("n", "<F9>", function()
     require("dap").toggle_breakpoint()
-end, { desc = "DAP: Toggle Breakpoint" })
+end, { desc = "Debug: toggle breakpoint" })
 map("n", "<F10>", function()
     require("dap").step_over()
-end, { desc = "DAP: Step Over" })
+end, { desc = "Debug: step over" })
 map("n", "<F11>", function()
     require("dap").step_into()
-end, { desc = "DAP: Step Into" })
+end, { desc = "Debug: step into" })
 map("n", "<F12>", function()
     require("dap").step_out()
-end, { desc = "DAP: Step Out" })
+end, { desc = "Debug: step out" })
 map("n", "<S-F5>", function()
     require("dap").terminate()
-end, { desc = "DAP: Detener debugger" })
+end, { desc = "Debug: terminate session" })
 map("n", "<leader>B", function()
-    require("dap").set_breakpoint(vim.fn.input "Condición del breakpoint: ")
-end, { desc = "DAP: Breakpoint condicional" })
+    require("dap").set_breakpoint(vim.fn.input "Breakpoint condition: ")
+end, { desc = "Debug: conditional breakpoint" })
 map("n", "<leader>du", function()
     require("dapui").toggle()
-end, { desc = "DAP: Toggle UI" })
+end, { desc = "Debug: toggle UI" })
 map("n", "<leader>dr", function()
     require("dap").repl.open()
-end, { desc = "DAP: Abrir REPL" })
+end, { desc = "Debug: open REPL" })
 map("n", "<leader>dl", function()
     require("dap").run_last()
-end, { desc = "DAP: Re-ejecutar último" })
+end, { desc = "Debug: rerun last session" })
+map("n", "<leader>dpt", function()
+    require("dap-python").test_method()
+end, { desc = "Debug: Python test method" })
+map("n", "<leader>dpc", function()
+    require("dap-python").test_class()
+end, { desc = "Debug: Python test class" })
 
--- ── NAVEGACIÓN DE SISTEMA DE ARCHIVOS (OIL) ───────────────────
-map("n", "-", "<CMD>Oil<CR>", { desc = "Abrir directorio padre (Oil)" })
+-- ── FILESYSTEM (OIL) ─────────────────────────────────────────────
+map("n", "-", "<CMD>Oil<CR>", { desc = "Files: open parent directory (Oil)" })
 
--- ── NAVEGACIÓN ULTRARRÁPIDA (HARPOON) ─────────────────────────
+-- ── HARPOON ──────────────────────────────────────────────────────
 local harpoon = require "harpoon"
 map("n", "<leader>ha", function()
     harpoon:list():add()
-end, { desc = "Harpoon: Agregar archivo" })
-map("n", "<C-e>", function()
+end, { desc = "Harpoon: pin current file" })
+map("n", "<leader>hm", function()
     harpoon.ui:toggle_quick_menu(harpoon:list())
-end, { desc = "Harpoon: Menú rápido" })
+end, { desc = "Harpoon: quick menu" })
 map("n", "<leader>1", function()
     harpoon:list():select(1)
-end, { desc = "Harpoon: Saltar al archivo 1" })
+end, { desc = "Harpoon: jump to file 1" })
 map("n", "<leader>2", function()
     harpoon:list():select(2)
-end, { desc = "Harpoon: Saltar al archivo 2" })
+end, { desc = "Harpoon: jump to file 2" })
 map("n", "<leader>3", function()
     harpoon:list():select(3)
-end, { desc = "Harpoon: Saltar al archivo 3" })
+end, { desc = "Harpoon: jump to file 3" })
 map("n", "<leader>4", function()
     harpoon:list():select(4)
-end, { desc = "Harpoon: Saltar al archivo 4" })
+end, { desc = "Harpoon: jump to file 4" })
 
--- ── ETIQUETAS DE AUDITORÍA (TODO COMMENTS) ─────────────────────
+-- ── TODO COMMENTS ────────────────────────────────────────────────
 map("n", "]t", function()
     require("todo-comments").jump_next()
-end, { desc = "TODO: Siguiente comentario" })
+end, { desc = "TODO: next comment" })
 map("n", "[t", function()
     require("todo-comments").jump_prev()
-end, { desc = "TODO: Comentario anterior" })
-map("n", "<leader>ft", "<cmd>Trouble todo toggle<CR>", { desc = "Trouble: Listar TODO/FIXME/BUG del proyecto" })
+end, { desc = "TODO: previous comment" })
 
--- ── RENOMBRADO RÁPIDO DEL ARCHIVO ACTUAL ─────────────────────────
+-- ── RENAME CURRENT FILE WITHOUT A FILE MANAGER ───────────────────
 map("n", "<leader>rf", function()
     local current_file = vim.fn.expand "%:p"
     if current_file == "" then
-        print "No hay ningún archivo abierto para renombrar."
+        vim.notify("No file open to rename.", vim.log.levels.WARN)
         return
     end
 
-    -- Pedir el nuevo nombre (autocompleta con el actual)
-    local new_name = vim.fn.input("Renombrar a: ", current_file, "file")
-
-    -- Si el usuario no cancela y el nombre es distinto
+    local new_name = vim.fn.input("Rename to: ", current_file, "file")
     if new_name ~= "" and new_name ~= current_file then
-        vim.cmd("saveas " .. vim.fn.fnameescape(new_name)) -- Guarda con el nuevo nombre
-        vim.fn.delete(current_file) -- Elimina el archivo viejo del sistema
-        vim.cmd "bd #" -- Cierra el buffer fantasma viejo
-        print "\nArchivo renombrado con éxito."
+        vim.cmd("saveas " .. vim.fn.fnameescape(new_name))
+        vim.fn.delete(current_file)
+        vim.cmd "bd #"
+        vim.notify("Renamed to " .. vim.fn.fnamemodify(new_name, ":t"), vim.log.levels.INFO)
     end
-end, { desc = "Renombrar archivo actual sin abrir explorador" })
+end, { desc = "File: rename current file" })
 
--- 1. SALIR DE LA TERMINAL AL MODO NORMAL
--- Esto es vital: te permite presionar <Esc> en la terminal y volver al modo normal
--- para poder moverte, copiar texto o cerrar la ventana.
-map("t", "<Esc>", "<C-\\><C-n>", { desc = "Terminal: Salir al modo normal" })
+-- ── TERMINALS ────────────────────────────────────────────────────
+map("t", "<Esc>", "<C-\\><C-n>", { desc = "Terminal: exit to normal mode" })
+map("t", "<leader>q", "<C-\\><C-n><cmd>quit<CR>", { desc = "Terminal: close window" })
 
--- 2. CERRAR CUALQUIER VENTANA (Incluyendo Terminal)
--- Usamos <leader>q. El <leader> suele ser la barra espaciadora.
--- Es un atajo seguro porque no interfiere con las letras normales de escritura.
-map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Cerrar ventana actual" })
+-- ── WINDOW MANAGEMENT ────────────────────────────────────────────
+-- `q` closes any auxiliary window/panel. It never quits Neovim: when it is
+-- the last normal file window, `q` is fed back so macro recording still works.
+map("n", "q", function()
+    local panels = require "configs.panels"
+    if panels.can_close() then
+        panels.close()
+    else
+        vim.api.nvim_feedkeys("q", "n", false)
+    end
+end, { desc = "Window: close panel (records macro if it is the only window)" })
+map("n", "<leader>q", "<cmd>quit<CR>", { desc = "Window: close current" })
+map("n", "<leader>Q", "<cmd>only<CR>", { desc = "Window: close all others" })
 
--- 3. CERRAR TERMINAL DESDE MODO INSERT O NORMAL (Atajo directo)
--- Si estás dentro de la terminal y quieres cerrarla de un solo golpe sin salir a normal primero:
-map("t", "<leader>q", "<C-\\><C-n><cmd>quit<CR>", { desc = "Terminal: Cerrar ventana rápido" })
+map("n", "<leader>wh", "<cmd>leftabove vsplit<CR>", { desc = "Split: open left" })
+map("n", "<leader>wl", "<cmd>rightbelow vsplit<CR>", { desc = "Split: open right" })
+map("n", "<leader>wk", "<cmd>aboveleft split<CR>", { desc = "Split: open above" })
+map("n", "<leader>wj", "<cmd>belowright split<CR>", { desc = "Split: open below" })
 
--- Cerrar todo excepto la ventana actual
-map("n", "<leader>Q", "<cmd>only<CR>", { desc = "Cerrar todas las demás ventanas" })
-
--- ── NAVEGADOR DE ESTRUCTURAS DE CÓDIGO Y SQL (AERIAL) ────────────
+-- ── OUTLINE (AERIAL) ─────────────────────────────────────────────
 local aerial_excluded_ft = { sql = true, mysql = true, plsql = true }
 
 map("n", "<leader>o", function()
     if aerial_excluded_ft[vim.bo.filetype] then
-        vim.notify("Aerial no soporta outline en SQL (bug del backend LSP/Treesitter).", vim.log.levels.WARN)
+        vim.notify("Aerial has no outline backend for SQL.", vim.log.levels.WARN)
         return
     end
-    local ok, aerial = pcall(require, "aerial")
+    local ok = pcall(require, "aerial")
     if ok then
-        aerial.toggle()
+        require("configs.panels").aerial_focus()
     else
-        vim.notify("Aerial no está descargado. Abre :Lazy y presiona 'I' para instalarlo.", vim.log.levels.ERROR)
+        vim.notify("Aerial is not installed. Run :Lazy and press 'I'.", vim.log.levels.ERROR)
     end
-end, { desc = "Aerial: Toggle árbol de tablas y símbolos" })
+end, { desc = "Aerial: focus or open outline" })
 
 map("n", "[s", function()
     local ok, aerial = pcall(require, "aerial")
     if ok then
         aerial.prev()
     end
-end, { desc = "Aerial: Símbolo/tabla anterior" })
+end, { desc = "Aerial: previous symbol" })
 
 map("n", "]s", function()
     local ok, aerial = pcall(require, "aerial")
     if ok then
         aerial.next()
     end
-end, { desc = "Aerial: Siguiente símbolo/tabla" })
+end, { desc = "Aerial: next symbol" })
 
-map("v", "y", '"+y', { desc = "Copiar selección al portapapeles" })
+map("v", "y", '"+y', { desc = "Yank: selection to system clipboard" })
+map("n", "<leader>Y", ":%y+<CR>", { desc = "Yank: whole buffer to system clipboard" })
 
--- ── SCROLL CENTRADO (lento línea a línea, rápido media página) ───
-map("n", "<C-d>", "<C-d>zz", { desc = "Scroll: Media página abajo (centrado)" })
-map("n", "<C-u>", "<C-u>zz", { desc = "Scroll: Media página arriba (centrado)" })
-map("n", "<C-e>", "3<C-e>", { desc = "Scroll: Lento hacia abajo (3 líneas)" })
-map("n", "<C-y>", "3<C-y>", { desc = "Scroll: Lento hacia arriba (3 líneas)" })
-map("n", "n", "nzzzv", { desc = "Búsqueda: Siguiente resultado (centrado)" })
-map("n", "N", "Nzzzv", { desc = "Búsqueda: Anterior resultado (centrado)" })
+-- ── SCROLLING ────────────────────────────────────────────────────
+map("n", "<C-d>", "<C-d>zz", { desc = "Scroll: half page down (centered)" })
+map("n", "<C-u>", "<C-u>zz", { desc = "Scroll: half page up (centered)" })
+map("n", "<C-e>", "3<C-e>", { desc = "Scroll: down 3 lines" })
+map("n", "<C-y>", "3<C-y>", { desc = "Scroll: up 3 lines" })
+map("n", "n", "nzzzv", { desc = "Search: next match (centered)" })
+map("n", "N", "Nzzzv", { desc = "Search: previous match (centered)" })
 
--- ── REDIMENSIONAR VENTANAS (espacialmente consciente, estilo bspwm) ──
+-- ── WINDOW RESIZING (spatially aware) ────────────────────────────
 local function smart_resize(direction)
     local amount = 3
     local cur = vim.fn.winnr()
@@ -275,20 +307,19 @@ end
 
 map("n", "<C-Left>", function()
     smart_resize "left"
-end, { desc = "Ventana: Mover borde a la izquierda" })
+end, { desc = "Resize: border left" })
 map("n", "<C-Right>", function()
     smart_resize "right"
-end, { desc = "Ventana: Mover borde a la derecha" })
+end, { desc = "Resize: border right" })
 map("n", "<C-Up>", function()
     smart_resize "up"
-end, { desc = "Ventana: Mover borde arriba" })
+end, { desc = "Resize: border up" })
 map("n", "<C-Down>", function()
     smart_resize "down"
-end, { desc = "Ventana: Mover borde abajo" })
+end, { desc = "Resize: border down" })
 
--- ── TERMINAL EN LAS 4 DIRECCIONES (extiende nvchad.term) ──────────
--- <A-h> abajo, <A-v> derecha, <A-i> flotante ya vienen de NvChad — no se tocan.
--- Acá solo agregamos las 2 direcciones que faltaban: izquierda y arriba.
+-- ── TERMINAL IN THE MISSING DIRECTIONS ───────────────────────────
+-- <A-h> bottom, <A-v> right and <A-i> float come from NvChad and stay as-is.
 local function git_cwd()
     local git_dir = vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")[1]
     if vim.v.shell_error == 0 and git_dir then
@@ -299,29 +330,21 @@ end
 
 map({ "n", "t" }, "<A-j>", function()
     require("nvchad.term").toggle { pos = "vsp", id = "leftTerm", cwd = git_cwd() }
-    vim.cmd "wincmd H" -- Envía la terminal recién abierta al borde izquierdo
-end, { desc = "Terminal: Toggle izquierda (raíz del repo)" })
+    vim.cmd "wincmd H"
+end, { desc = "Terminal: toggle left (repo root)" })
 
 map({ "n", "t" }, "<A-k>", function()
     require("nvchad.term").toggle { pos = "sp", id = "upTerm", cwd = git_cwd() }
-    vim.cmd "wincmd K" -- Envía la terminal recién abierta al borde superior
-end, { desc = "Terminal: Toggle arriba (raíz del repo)" })
+    vim.cmd "wincmd K"
+end, { desc = "Terminal: toggle top (repo root)" })
 
--- ── ABRIR SPLIT DE CÓDIGO EN UNA DIRECCIÓN ESPECÍFICA ─────────────
-map("n", "<leader>wh", "<cmd>leftabove vsplit<CR>", { desc = "Split: Abrir a la izquierda" })
-map("n", "<leader>wl", "<cmd>rightbelow vsplit<CR>", { desc = "Split: Abrir a la derecha" })
-map("n", "<leader>wk", "<cmd>aboveleft split<CR>", { desc = "Split: Abrir arriba" })
-map("n", "<leader>wj", "<cmd>belowright split<CR>", { desc = "Split: Abrir abajo" })
-
--- ── ESTADO DE NAVEGACIÓN DEL WINBAR (selección pendiente, sin abrir aún) ──
+-- ── WINBAR NAVIGATION STATE (pending selection, nothing opens yet) ─
 _G.WinbarNavState = { active = false, mode = nil, index = 1, items = {} }
 
 local function winbar_reset_nav()
     _G.WinbarNavState = { active = false, mode = nil, index = 1, items = {} }
 end
 
--- Reinicia la selección pendiente al cambiar de buffer, para no arrastrar
--- una selección vieja de otro archivo/carpeta.
 vim.api.nvim_create_autocmd("BufEnter", {
     callback = winbar_reset_nav,
 })
@@ -375,7 +398,7 @@ local function get_sibling_file_items()
     return items
 end
 
--- ]f / [f: SOLO mueven la selección (resaltada en otro color), no abren nada.
+-- ]f / [f only move the pending selection (highlighted); they never open.
 local function winbar_nav_move(direction)
     local mode = vim.g.winbar_mode or "path"
     local state = _G.WinbarNavState
@@ -405,8 +428,7 @@ local function winbar_nav_move(direction)
     vim.cmd "redrawstatus!"
 end
 
--- Enter: SOLO acá se abre lo seleccionado. Sin selección pendiente, Enter
--- se comporta como siempre (bajar a la primera columna no vacía de abajo).
+-- <CR> confirms the pending selection; without one it keeps default behaviour.
 local function winbar_nav_confirm()
     local state = _G.WinbarNavState
     if not state.active or #state.items == 0 then
@@ -427,70 +449,60 @@ end
 
 map("n", "]f", function()
     winbar_nav_move(1)
-end, { desc = "Winbar: Mover selección siguiente (Enter abre)" })
+end, { desc = "Winbar: select next entry (<CR> opens)" })
 map("n", "[f", function()
     winbar_nav_move(-1)
-end, { desc = "Winbar: Mover selección anterior (Enter abre)" })
-map("n", "<CR>", winbar_nav_confirm, { desc = "Winbar: Confirmar selección / Enter normal" })
+end, { desc = "Winbar: select previous entry (<CR> opens)" })
+map("n", "<CR>", winbar_nav_confirm, { desc = "Winbar: confirm selection / default <CR>" })
 
 map("n", "<leader>ww", function()
     vim.g.winbar_mode = (vim.g.winbar_mode == "path") and "files" or "path"
     winbar_reset_nav()
-    vim.notify("Winbar: modo " .. vim.g.winbar_mode, vim.log.levels.INFO)
+    vim.notify("Winbar mode: " .. vim.g.winbar_mode, vim.log.levels.INFO)
     vim.cmd "redrawstatus!"
-end, { desc = "Winbar: Alternar modo (ruta / archivos)" })
+end, { desc = "Winbar: switch mode (path / files)" })
 
--- ── DAP-PYTHON: Debug de tests (pytest/unittest) ─────────────────
-map("n", "<leader>dpt", function()
-    require("dap-python").test_method()
-end, { desc = "DAP: Debug método de test (Python)" })
-map("n", "<leader>dpc", function()
-    require("dap-python").test_class()
-end, { desc = "DAP: Debug clase de test (Python)" })
+-- ── WEB PREVIEW (LIVE SERVER) ────────────────────────────────────
+map("n", "<F4>", "<cmd>LiveServerStart<CR>", { desc = "Web: start live server" })
+map("n", "<S-F4>", "<cmd>LiveServerStop<CR>", { desc = "Web: stop live server" })
 
--- ── VISTA PREVIA WEB (LIVE SERVER) ───────────────────────────────
-map("n", "<F4>", "<cmd>LiveServerStart<CR>", { desc = "Web: Iniciar Live Server" })
-map("n", "<S-F4>", "<cmd>LiveServerStop<CR>", { desc = "Web: Detener Live Server" })
+-- ── QUICK NOTES ──────────────────────────────────────────────────
+map("n", "<leader>nn", "<cmd>GlobalNote<CR>", { desc = "Notes: global note" })
+map("n", "<leader>np", "<cmd>ProjectNote<CR>", { desc = "Notes: project note" })
 
--- ── NOTAS RÁPIDAS (ventana flotante) ──────────────────────────────
-map("n", "<leader>nn", "<cmd>GlobalNote<CR>", { desc = "Nota: Global (todas las sesiones)" })
-map("n", "<leader>np", "<cmd>ProjectNote<CR>", { desc = "Nota: Del proyecto actual (por carpeta git)" })
-
--- ── FOLDING (nvim-ufo) ────────────────────────────────────────────
+-- ── FOLDING (nvim-ufo) ───────────────────────────────────────────
 map("n", "zR", function()
     require("ufo").openAllFolds()
-end, { desc = "Fold: Abrir todo" })
+end, { desc = "Folds: open all" })
 map("n", "zM", function()
     require("ufo").closeAllFolds()
-end, { desc = "Fold: Cerrar todo" })
+end, { desc = "Folds: close all" })
 
--- ── REFACTORING (selección visual) ───────────────────────────────
+-- ── REFACTORING (VISUAL SELECTION) ───────────────────────────────
 map("v", "<leader>rv", function()
     require("refactoring").refactor "Extract Variable"
-end, { desc = "Refactor: Extraer variable" })
-map("v", "<leader>rf", function()
+end, { desc = "Refactor: extract variable" })
+map("v", "<leader>rF", function()
     require("refactoring").refactor "Extract Function"
-end, { desc = "Refactor: Extraer función" })
+end, { desc = "Refactor: extract function" })
 map("v", "<leader>ri", function()
     require("refactoring").refactor "Inline Variable"
-end, { desc = "Refactor: Inline variable" })
+end, { desc = "Refactor: inline variable" })
 
--- ── MULTI-CURSOR ──────────────────────────────────────────────────
+-- ── MULTI-CURSOR ─────────────────────────────────────────────────
 local mc = require "multicursor-nvim"
 mc.setup()
 map({ "n", "v" }, "<leader>mj", function()
     mc.lineAddCursor(1)
-end, { desc = "MultiCursor: Agregar cursor abajo" })
+end, { desc = "Multi-cursor: add cursor below" })
 map({ "n", "v" }, "<leader>mk", function()
     mc.lineAddCursor(-1)
-end, { desc = "MultiCursor: Agregar cursor arriba" })
+end, { desc = "Multi-cursor: add cursor above" })
 map({ "n", "v" }, "<C-A-n>", function()
     mc.matchAddCursor(1)
-end, { desc = "MultiCursor: Agregar cursor en siguiente coincidencia" })
+end, { desc = "Multi-cursor: add cursor at next match" })
 
--- <Esc> unificado: limpia el resaltado de búsqueda Y maneja MultiCursor
--- (antes estaban duplicados en dos mapeos distintos; el segundo pisaba
--- al primero en silencio y "noh" había dejado de funcionar).
+-- Single <Esc>: clear search highlight and manage multi-cursor state.
 map("n", "<Esc>", function()
     vim.cmd "noh"
     if not mc.cursorsEnabled() then
@@ -498,27 +510,27 @@ map("n", "<Esc>", function()
     else
         mc.clearCursors()
     end
-end, { desc = "Limpiar búsqueda / MultiCursor" })
+end, { desc = "Clear search highlight / multi-cursor" })
 
--- ── MODO ZEN ──────────────────────────────────────────────────────
-map("n", "<leader>zz", "<cmd>ZenMode<CR>", { desc = "Zen: Modo foco" })
+-- ── ZEN MODE ─────────────────────────────────────────────────────
+map("n", "<leader>zz", "<cmd>ZenMode<CR>", { desc = "Zen: focus mode" })
 
--- ── LATEX ─────────────────────────────────────────────────────────
-map("n", "<leader>ll", "<cmd>VimtexCompile<CR>", { desc = "LaTeX: Compilar (continuo)" })
-map("n", "<leader>lv", "<cmd>VimtexView<CR>", { desc = "LaTeX: Ver PDF" })
-map("n", "<leader>lc", "<cmd>VimtexClean<CR>", { desc = "LaTeX: Limpiar auxiliares" })
+-- ── LATEX ────────────────────────────────────────────────────────
+map("n", "<leader>ll", "<cmd>VimtexCompile<CR>", { desc = "LaTeX: compile (continuous)" })
+map("n", "<leader>lv", "<cmd>VimtexView<CR>", { desc = "LaTeX: view PDF" })
+map("n", "<leader>lc", "<cmd>VimtexClean<CR>", { desc = "LaTeX: clean auxiliaries" })
 
--- ── AVANTE (IA con Gemini) ────────────────────────────────────────
+-- ── AVANTE (AI ASSISTANT) ────────────────────────────────────────
 map("n", "<leader>ag", function()
     local models = {
-        { label = "Gemini 3.1 Pro (más potente)", provider = "gemini", idx = 1 },
+        { label = "Gemini 3.1 Pro (highest capability)", provider = "gemini", idx = 1 },
         { label = "Gemini 3.8 Flash", provider = "gemini_flash38", idx = 2 },
         { label = "Gemini 3.7 Flash", provider = "gemini_flash37", idx = 3 },
         { label = "Gemini 3.6 Flash", provider = "gemini_flash36", idx = 4 },
-        { label = "Gemini 3.5 Flash-Lite (más rápido/económico)", provider = "gemini_flash_lite", idx = 5 },
+        { label = "Gemini 3.5 Flash-Lite (fastest / cheapest)", provider = "gemini_flash_lite", idx = 5 },
     }
     vim.ui.select(models, {
-        prompt = "Cambiar modelo de Avante:",
+        prompt = "Switch Avante model:",
         format_item = function(item)
             return item.label
         end,
@@ -526,49 +538,48 @@ map("n", "<leader>ag", function()
         if choice then
             require("avante.api").switch_provider(choice.provider)
             _G.AvanteCascadeIndex = choice.idx
-            vim.notify("Avante: usando " .. choice.label, vim.log.levels.INFO)
+            vim.notify("Avante: using " .. choice.label, vim.log.levels.INFO)
         end
     end)
-end, { desc = "Avante: Elegir modelo Gemini" })
+end, { desc = "Avante: select Gemini model" })
 
 map("n", "<leader>aR", function()
     require("avante.api").switch_provider "gemini"
     _G.AvanteCascadeIndex = 1
-    vim.notify("Avante: reseteado a Gemini 3.1 Pro", vim.log.levels.INFO)
-end, { desc = "Avante: Resetear al modelo más potente" })
+    vim.notify("Avante: reset to Gemini 3.1 Pro", vim.log.levels.INFO)
+end, { desc = "Avante: reset to default model" })
 
--- ── TOGGLES DE UI (spell, wrap, numeración, diagnostics) ──────────
--- Convención "<leader>u" para toggles de interfaz — estándar reconocible
--- en configs profesionales (LazyVim usa el mismo prefijo para esto).
-map("n", "<leader>us", "<cmd>set spell!<CR>", { desc = "UI: Toggle corrector ortográfico" })
-map("n", "<leader>uw", "<cmd>set wrap!<CR>", { desc = "UI: Toggle ajuste de línea (wrap)" })
+-- ── UI TOGGLES (<leader>u, same convention as LazyVim) ───────────
+map("n", "<leader>us", "<cmd>set spell!<CR>", { desc = "UI: toggle spell checker" })
+map("n", "<leader>uw", "<cmd>set wrap!<CR>", { desc = "UI: toggle line wrap" })
 map("n", "<leader>un", function()
     vim.wo.number = not vim.wo.number
     vim.wo.relativenumber = not vim.wo.relativenumber
-end, { desc = "UI: Toggle numeración (útil al compartir pantalla)" })
+end, { desc = "UI: toggle line numbers" })
 map("n", "<leader>ud", function()
     vim.diagnostic.enable(not vim.diagnostic.is_enabled())
-end, { desc = "UI: Toggle diagnostics visibles" })
+end, { desc = "UI: toggle diagnostics" })
+map("n", "<leader>uc", "<cmd>TSContext toggle<CR>", { desc = "UI: toggle sticky context" })
+map("n", "<leader>ul", function()
+    vim.wo.list = not vim.wo.list
+    vim.notify("listchars: " .. (vim.wo.list and "on" or "off"), vim.log.levels.INFO)
+end, { desc = "UI: toggle listchars (indent dots)" })
 
--- ── SESIONES (persistence.nvim) ───────────────────────────────────
+-- ── SESSIONS (persistence.nvim) ──────────────────────────────────
 map("n", "<leader>Ps", function()
     require("persistence").load()
-end, { desc = "Sesión: Restaurar la de este directorio" })
+end, { desc = "Session: restore this directory" })
 map("n", "<leader>Pl", function()
     require("persistence").load { last = true }
-end, { desc = "Sesión: Restaurar la última guardada" })
+end, { desc = "Session: restore last session" })
 map("n", "<leader>Pd", function()
     require("persistence").stop()
-end, { desc = "Sesión: No guardar al salir" })
+end, { desc = "Session: do not save on exit" })
 
--- ── YANK RÁPIDO DE TODO EL ARCHIVO ────────────────────────────────
-map("n", "<leader>Y", ":%y+<CR>", { desc = "Yank: Todo el buffer al portapapeles" })
-
--- ── DASHBOARD PROFESIONAL (IDE HUB) ────────────────────────────────
+-- ── DASHBOARD ────────────────────────────────────────────────────
 map("n", "<leader>;", function()
     require("dashboard").open()
-end, { desc = "Dashboard: Pantalla principal e IDE Hub" })
+end, { desc = "Dashboard: open IDE home" })
 map("n", "<leader>D", function()
     require("dashboard").open()
-end, { desc = "Dashboard: Pantalla principal e IDE Hub" })
-
+end, { desc = "Dashboard: open IDE home" })

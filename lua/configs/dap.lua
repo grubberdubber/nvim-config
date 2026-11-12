@@ -8,38 +8,51 @@ if not ok_dapui then
     return
 end
 
--- 1. CONFIGURACIÓN DE LA UI
+-- ── DEBUGGER UI ──────────────────────────────────────────────────
 dapui.setup {
     controls = {
-        enabled = true, -- Bug conocido de dapui: puede crashear si togglés
-        -- el panel SIN sesión de debug activa (ni breakpoint puesto).
-        -- Poné al menos un breakpoint con F9 antes de abrir <leader>du
-        -- por primera vez para evitarlo.
+        enabled = true,
+        -- Known dapui issue: toggling the panel with no active session and no
+        -- breakpoint can crash. Set at least one breakpoint (F9) before the
+        -- first <leader>du if you hit it.
     },
 }
--- 2. AUTO-OPEN BLINDADO
+
 dap.listeners.after.event_initialized["dapui_config"] = function()
     dapui.open()
 end
 
--- ── HELPER: Búsqueda dinámica de Python ──────────────────────────
+-- ── HELPERS ──────────────────────────────────────────────────────
+local function exists(path)
+    return vim.fn.executable(path) == 1
+end
+
+local function mason_bin(name)
+    return vim.fn.stdpath "data" .. "/mason/bin/" .. name
+end
+
+--- Resolve a Python interpreter: project venv first, then debugpy's venv,
+--- then the system python3.
 local function get_python_path()
-    local cwd_venv = vim.fn.getcwd() .. "/.venv/bin/python"
-    if vim.fn.executable(cwd_venv) == 1 then
-        return cwd_venv
-    end
-    local cwd_venv2 = vim.fn.getcwd() .. "/venv/bin/python"
-    if vim.fn.executable(cwd_venv2) == 1 then
-        return cwd_venv2
-    end
-    local mason_python = vim.fn.stdpath "data" .. "/mason/packages/debugpy/venv/bin/python"
-    if vim.fn.executable(mason_python) == 1 then
-        return mason_python
+    local candidates = {
+        vim.fn.getcwd() .. "/.venv/bin/python",
+        vim.fn.getcwd() .. "/venv/bin/python",
+        vim.fn.stdpath "data" .. "/mason/packages/debugpy/venv/bin/python",
+    }
+    for _, path in ipairs(candidates) do
+        if exists(path) then
+            return path
+        end
     end
     return vim.fn.exepath "python3" or "/usr/bin/python3"
 end
 
--- 3. ADAPTADORES
+--- Prompt for an executable path, starting from a sensible default.
+local function prompt_program(default_dir)
+    return vim.fn.input("Executable: ", default_dir, "file")
+end
+
+-- ── ADAPTERS ─────────────────────────────────────────────────────
 dap.adapters.python = function(cb, config)
     if config.request == "attach" then
         local port = (config.connect or config).port
@@ -63,22 +76,74 @@ end
 dap.adapters.codelldb = {
     type = "server",
     port = "${port}",
-    executable = { command = vim.fn.stdpath "data" .. "/mason/bin/codelldb", args = { "--port", "${port}" } },
+    executable = { command = mason_bin "codelldb", args = { "--port", "${port}" } },
 }
-dap.adapters.cppdbg = { type = "executable", command = vim.fn.stdpath "data" .. "/mason/bin/OpenDebugAD7" }
+
+dap.adapters.cppdbg = { type = "executable", command = mason_bin "OpenDebugAD7" }
+
 dap.adapters.rust = dap.adapters.codelldb
+
 dap.adapters.delve = {
     type = "server",
     port = "${port}",
-    executable = { command = "dlv", args = { "dap", "-l", "127.0.0.1:${port}" } },
+    executable = { command = mason_bin "dlv", args = { "dap", "-l", "127.0.0.1:${port}" } },
 }
 
--- 4. CONFIGURACIONES MAESTRAS
+-- Node/TypeScript: one adapter, one shared launch template (pwa-node).
+dap.adapters["pwa-node"] = {
+    type = "server",
+    host = "127.0.0.1",
+    port = "${port}",
+    executable = {
+        command = "node",
+        args = { vim.fn.stdpath "data" .. "/mason/packages/js-debug-adapter/js-debug/src/dapDebugServer.js", "${port}" },
+    },
+}
+
+-- Bash: bashdb through the mason bash-debug-adapter package.
+if exists(mason_bin "bash-debug-adapter") then
+    dap.adapters.bashdb = {
+        type = "executable",
+        command = mason_bin "bash-debug-adapter",
+        name = "bashdb",
+    }
+
+    local bashdb_dir = vim.fn.stdpath "data" .. "/mason/packages/bash-debug-adapter/extension/bashdb_dir"
+    dap.configurations.sh = {
+        {
+            type = "bashdb",
+            request = "launch",
+            name = "Launch current file",
+            program = "${file}",
+            cwd = "${workspaceFolder}",
+            pathBash = "/bin/bash",
+            pathCat = "cat",
+            pathMkfifo = "mkfifo",
+            pathPkill = "pkill",
+            pathBashdb = bashdb_dir .. "/bashdb",
+            pathBashdbLib = bashdb_dir,
+            env = {}, -- the adapter dereferences it unconditionally
+            args = {},
+        },
+    }
+    dap.configurations.bash = dap.configurations.sh
+end
+
+-- .NET: netcoredbg (installed through mason-nvim-dap).
+if exists(mason_bin "netcoredbg") then
+    dap.adapters.coreclr = {
+        type = "executable",
+        command = mason_bin "netcoredbg",
+        args = { "--interpreter=vscode" },
+    }
+end
+
+-- ── LAUNCH CONFIGURATIONS ────────────────────────────────────────
 dap.configurations.python = {
     {
         type = "python",
         request = "launch",
-        name = "Lanzar archivo actual",
+        name = "Launch current file",
         program = "${file}",
         pythonPath = get_python_path,
         console = "internalConsole",
@@ -91,7 +156,7 @@ dap.configurations.c = {
         type = "codelldb",
         request = "launch",
         program = function()
-            return vim.fn.input("Ejecutable: ", vim.fn.getcwd() .. "/", "file")
+            return prompt_program(vim.fn.getcwd() .. "/")
         end,
         cwd = "${workspaceFolder}",
         stopOnEntry = false,
@@ -106,26 +171,71 @@ dap.configurations.rust = {
         request = "launch",
         program = function()
             vim.fn.system "cargo build"
-            return vim.fn.input("Ejecutable: ", vim.fn.getcwd() .. "/target/debug/", "file")
+            return prompt_program(vim.fn.getcwd() .. "/target/debug/")
         end,
         cwd = "${workspaceFolder}",
         stopOnEntry = false,
     },
 }
+
 dap.configurations.go = {
-    { type = "delve", name = "Debug", request = "launch", program = "${file}" },
+    { type = "delve", name = "Debug current file", request = "launch", program = "${file}" },
+    { type = "delve", name = "Debug package", request = "launch", program = "${workspaceFolder}" },
 }
 
--- ── DAP-PYTHON: config mejorada, venv-aware, debug de tests ──────
+local node_configs = {
+    {
+        type = "pwa-node",
+        request = "launch",
+        name = "Launch current file",
+        program = "${file}",
+        cwd = "${workspaceFolder}",
+        sourceMaps = true,
+        console = "integratedTerminal",
+        skipFiles = { "<node_internals>/**" },
+    },
+    {
+        type = "pwa-node",
+        request = "attach",
+        name = "Attach to process (port 9229)",
+        port = 9229,
+        cwd = "${workspaceFolder}",
+        skipFiles = { "<node_internals>/**" },
+    },
+}
+
+dap.configurations.javascript = node_configs
+dap.configurations.typescript = node_configs
+dap.configurations.javascriptreact = node_configs
+dap.configurations.typescriptreact = node_configs
+
+local function csharp_configs()
+    if not dap.adapters.coreclr then
+        return {}
+    end
+    return {
+        {
+            type = "coreclr",
+            name = "Launch (netcoredbg)",
+            request = "launch",
+            program = function()
+                return prompt_program(vim.fn.getcwd() .. "/bin/Debug/")
+            end,
+        },
+    }
+end
+
+dap.configurations.cs = csharp_configs()
+
+-- ── DAP-PYTHON: venv-aware, adds test/module configurations ──────
 local ok_dap_python, dap_python = pcall(require, "dap-python")
 if ok_dap_python then
     dap_python.setup(get_python_path())
-    -- Esto AGREGA configuraciones nuevas a dap.configurations.python
-    -- (no reemplaza la tuya de "Lanzar archivo actual"): incluye debug
-    -- de módulo, con argumentos, y attach remoto.
+    -- Adds extra entries (module, args, remote attach) without replacing the
+    -- "Launch current file" configuration above.
 end
 
--- ── VALORES DE VARIABLES INLINE AL DEBUGGEAR ─────────────────────
+-- ── INLINE VARIABLE VALUES ───────────────────────────────────────
 local ok_virtual_text, dap_virtual_text = pcall(require, "nvim-dap-virtual-text")
 if ok_virtual_text then
     dap_virtual_text.setup {

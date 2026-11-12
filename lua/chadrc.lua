@@ -2,23 +2,23 @@
 local M = {}
 
 M.base46 = {
-    theme = "fluorodark", -- Cambia automáticamente con tu selector de temas
+    theme = "fluorodark", -- Switched automatically by the theme picker
     hl_override = {
         WinBar = { bg = "NONE" },
         WinBarNC = { bg = "NONE" },
         StatusLine = { bg = "NONE" },
         StatusLineNC = { bg = "NONE" },
 
-        -- ── MEJORA DE CONTRASTE PARA TEXTO VIRTUAL DEL LSP ──
-        -- Errores en rojo salmón suave y brillante (muy legible)
+        -- ── CONTRAST FOR LSP VIRTUAL TEXT ──
+        -- Errors: soft, bright salmon red (highly legible)
         DiagnosticVirtualTextError = { fg = "#ff7a93", bg = "NONE", italic = true },
-        -- Warnings en amarillo/dorado cálido claro
+        -- Warnings: light warm gold
         DiagnosticVirtualTextWarn = { fg = "#ffc27d", bg = "NONE", italic = true },
-        -- Info y Hints en tonos celestes y grises claros visibles
+        -- Info and hints: visible cyan and light grey
         DiagnosticVirtualTextInfo = { fg = "#78dce8", bg = "NONE", italic = true },
         DiagnosticVirtualTextHint = { fg = "#a9b1d6", bg = "NONE", italic = true },
     },
-    -- ── CORRECCIÓN NATIVA DE BLINK.CMP DESDE EL ARRANQUE DE NVCHAD ──
+    -- ── NATIVE BLINK.CMP FIXES FROM NVCHAD STARTUP ──
 
     hl_add = {
         BlinkCmpMenu = { link = "Pmenu" },
@@ -29,10 +29,10 @@ M.base46 = {
         BlinkCmpDocBorder = { link = "FloatBorder" },
         BlinkCmpLabel = { link = "Pmenu" },
         BlinkCmpLabelDeprecated = { link = "Comment", strikethrough = true },
-        BlinkCmpGhostText = { link = "Comment", italic = true }, -- Texto fantasma (preview inline)
-        BlinkCmpSignatureHelpBorder = { link = "FloatBorder" }, -- Ventana de firma de función (parámetros)
+        BlinkCmpGhostText = { link = "Comment", italic = true }, -- Inline ghost text preview
+        BlinkCmpSignatureHelpBorder = { link = "FloatBorder" }, -- Signature help window
 
-        -- ── Colores por tipo de sugerencia (saltea CmpItemKind*, vacío en este tema) ──
+        -- ── Colors per completion kind (skips CmpItemKind*, empty in this theme) ──
         BlinkCmpKindText = { link = "Normal" },
         BlinkCmpKindMethod = { link = "Function" },
         BlinkCmpKindFunction = { link = "Function" },
@@ -58,17 +58,17 @@ M.base46 = {
         BlinkCmpKindEvent = { link = "Special" },
         BlinkCmpKindOperator = { link = "Operator" },
         BlinkCmpKindTypeParameter = { link = "Type" },
-        -- ── ETIQUETAS: < > / </ />  en blanco suave ──
+        -- ── TAG DELIMITERS: < > / </ /> in soft white ──
         ["@tag.delimiter"] = { fg = "#CFE3F7" },
 
-        -- ── RAINBOW DELIMITERS (Adaptable automáticamente a cualquier tema) ──
-        RainbowDelimiterRed = { link = "Keyword" }, -- Tomará el color de las palabras clave
-        RainbowDelimiterYellow = { link = "Type" }, -- Tomará el color de las clases/tipos
-        RainbowDelimiterBlue = { link = "Function" }, -- Tomará el color de las funciones
-        RainbowDelimiterOrange = { link = "Constant" }, -- Tomará el color de las constantes
-        RainbowDelimiterGreen = { link = "String" }, -- Tomará el color de los textos
-        RainbowDelimiterViolet = { link = "Statement" }, -- Tomará el color de las declaraciones
-        RainbowDelimiterCyan = { link = "Special" }, -- Tomará el color de los caracteres especiales
+        -- ── RAINBOW DELIMITERS (follow any theme automatically) ──
+        RainbowDelimiterRed = { link = "Keyword" }, -- Keyword color
+        RainbowDelimiterYellow = { link = "Type" }, -- Class/type color
+        RainbowDelimiterBlue = { link = "Function" }, -- Function color
+        RainbowDelimiterOrange = { link = "Constant" }, -- Constant color
+        RainbowDelimiterGreen = { link = "String" }, -- String color
+        RainbowDelimiterViolet = { link = "Statement" }, -- Statement color
+        RainbowDelimiterCyan = { link = "Special" }, -- Special character color
     },
 }
 
@@ -77,7 +77,7 @@ M.ui = {
         theme = "minimal",
         order = { "mode", "file_and_path", "align", "git", "file_info" },
         modules = {
-            -- 1. MODO (Automático con tu tema)
+            -- 1. MODE (themed automatically)
             mode = function()
                 local m = vim.api.nvim_get_mode().mode
                 local modes = {
@@ -103,12 +103,12 @@ M.ui = {
                 return "%#" .. (hl[m] or "St_NormalMode") .. "# 󰕮 " .. (modes[m] or string.upper(m)) .. " "
             end,
 
-            -- 2. ICONO + ARCHIVO (Limpio y protegido)
+            -- 2. ICON + FILENAME (clean and guarded)
             file_and_path = function()
                 local fn = vim.fn.expand "%:t"
                 local bt = vim.bo.buftype
 
-                -- Cortafuegos para paneles especiales (Lazy, Mason, Terminal)
+                -- Guard for special panels (Lazy, Mason, terminal)
                 if bt == "nofile" or bt == "terminal" or bt == "prompt" or vim.bo.filetype == "lazy" then
                     local ft = vim.bo.filetype
                     return " %#St_file_txt# 󰈚 " .. (ft ~= "" and string.upper(ft) or "PANEL") .. " "
@@ -123,12 +123,12 @@ M.ui = {
                 return " %#St_file_txt# " .. icon .. " " .. fn .. mod .. " "
             end,
 
-            -- 3. ALINEADOR
+            -- 3. ALIGNER
             align = function()
                 return "%="
             end,
 
-            -- 4. GIT (Tus configuraciones e íconos originales restaurados)
+            -- 4. GIT
             git = function()
                 if vim.bo.buftype ~= "" or vim.bo.filetype == "lazy" then
                     return ""
@@ -147,7 +147,7 @@ M.ui = {
                 return " " .. branch .. added .. changed .. removed .. " %#St_file_txt#│ "
             end,
 
-            -- 5. INFO DE ARCHIVO (Línea:Columna/Total — abajo a la derecha)
+            -- 5. FILE INFO (Line:Column/Total, bottom right)
             file_info = function()
                 if vim.bo.buftype ~= "" or vim.bo.filetype == "lazy" then
                     return ""
@@ -174,13 +174,13 @@ M.ui = {
     },
 }
 
--- 7. WINBAR SUPERIOR — 2 modos: breadcrumb de carpetas / archivos hermanos
--- Selección (]f/[f) resaltada aparte de "dónde estás realmente" (St_NormalMode).
--- Enter confirma y recién ahí abre — ver mappings.lua para la lógica de movimiento.
--- Lado derecho: diagnósticos (errores/warnings/hints) + conteo de archivos de la carpeta.
+-- TOP WINBAR — 2 modes: folder breadcrumb / sibling files
+-- The pending selection (]f/[f) is highlighted separately from "where you are"
+-- (St_NormalMode). <CR> confirms and only then opens; see mappings.lua for the
+-- movement logic. Right side: diagnostics (errors/warnings/hints) + file count.
 vim.g.winbar_mode = "path" -- "path" | "files"
 
--- Caché de listado de directorio: evita escanear el disco en cada redraw
+-- Directory listing cache: avoids hitting the disk on every redraw
 local dir_cache = {}
 
 local function get_sibling_files(dir)
@@ -211,12 +211,12 @@ vim.api.nvim_create_autocmd({ "DirChanged", "BufWritePost", "BufNewFile" }, {
     end,
 })
 
--- ── Estilo del breadcrumb (discreto, estilo VS Code) ────────────────────────────────
--- Los colores salen del tema activo (Comment / Normal / DiagnosticWarn / WinBar) y se
--- recalculan solos si cambias de tema: no hay ningún hexadecimal fijo.
+-- ── Breadcrumb styling (discreet, VS Code style) ─────────────────
+-- Colors come from the active theme (Comment / Normal / DiagnosticWarn /
+-- WinBar) and are recomputed on theme change: there is no hardcoded hex.
 local crumb_key
 
-local function mix(a, b, t) -- mezcla dos colores 0xRRGGBB: t=0 -> a, t=1 -> b
+local function mix(a, b, t) -- blend two 0xRRGGBB colors: t=0 -> a, t=1 -> b
     local function ch(c, s)
         return math.floor(c / s) % 256
     end
@@ -243,11 +243,11 @@ local function ensure_crumb_hl()
         opts.bg = bg
         vim.api.nvim_set_hl(0, name, opts)
     end
-    set("WinCrumb", { fg = comment }) -- carpetas
-    set("WinCrumbSep", { fg = mix(comment, bg or 0x000000, 0.35) }) -- separador, aún más tenue
-    set("WinCrumbFile", { fg = mix(comment, normal, 0.45) }) -- archivo actual
-    set("WinCrumbSel", { fg = warn, bold = true, underline = true }) -- selección pendiente (]f / [f)
-    set("WinCrumbMod", { fg = mix(normal, bg or 0x000000, 0.55) }) -- indicador de modificado
+    set("WinCrumb", { fg = comment }) -- folders
+    set("WinCrumbSep", { fg = mix(comment, bg or 0x000000, 0.1) }) -- separator, slightly dimmer
+    set("WinCrumbFile", { fg = mix(comment, normal, 0.45) }) -- current file
+    set("WinCrumbSel", { fg = warn, bold = true, underline = true }) -- pending selection (]f / [f)
+    set("WinCrumbMod", { fg = mix(normal, bg or 0x000000, 0.55) }) -- modified indicator
 end
 
 local function winbar_path_mode()
@@ -285,7 +285,7 @@ local function winbar_path_mode()
 
         local hl = is_last and "WinCrumbFile" or "WinCrumb"
         if is_selected then
-            hl = "WinCrumbSel" -- selección pendiente (moviéndote con ]f/[f, todavía sin abrir)
+            hl = "WinCrumbSel" -- pending selection (moving with ]f/[f, not open yet)
         end
 
         if is_last then
@@ -297,7 +297,7 @@ local function winbar_path_mode()
         end
     end
 
-    -- Alineado a la izquierda (como VS Code); el `%=` final empuja diagnósticos/contador a la derecha
+    -- Left-aligned (like VS Code); the trailing `%=` pushes diagnostics/count right
     return " " .. table.concat(crumbs, " %#WinCrumbSep#›%#WinCrumb# ") .. "%="
 end
 
@@ -320,9 +320,9 @@ local function winbar_files_mode()
 
         local hl = "St_lspTxt"
         if is_selected then
-            hl = "St_lspWarning" -- selección pendiente
+            hl = "St_lspWarning" -- pending selection
         elseif fname == current_file then
-            hl = "St_NormalMode" -- archivo abierto actualmente
+            hl = "St_NormalMode" -- currently open file
         end
 
         table.insert(parts, "%#" .. hl .. "# " .. icon .. " " .. fname .. " %#St_file_txt#")
@@ -331,7 +331,7 @@ local function winbar_files_mode()
     return "%=" .. table.concat(parts, "%#St_file_txt# │ ") .. "%="
 end
 
--- Lado derecho del winbar: diagnósticos + conteo de archivos de la carpeta
+-- Right side of the winbar: diagnostics + file count for the folder
 local function winbar_right_section()
     local err = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.ERROR })
     local warn = #vim.diagnostic.get(0, { severity = vim.diagnostic.severity.WARN })
@@ -351,7 +351,7 @@ local function winbar_right_section()
     if hint > 0 then
         str = str .. "%#DiagnosticHint# " .. hint .. " "
     end
-    -- Conteo de archivos (solo archivos, sin contar carpetas) de la carpeta actual
+    -- Count files (not folders) in the current directory
     local dir = vim.fn.expand "%:p:h"
     local file_count = 0
     local handle = vim.loop.fs_scandir(dir)

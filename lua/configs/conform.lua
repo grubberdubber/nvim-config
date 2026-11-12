@@ -1,6 +1,6 @@
 local options = {
     formatters_by_ft = {
-        -- ── Web & Frontend ───────────────────────────────────────────
+        -- ── Web and frontend ─────────────────────────────────────────
         lua = { "stylua" },
         javascript = { "prettier" },
         typescript = { "prettier" },
@@ -14,21 +14,21 @@ local options = {
         typescriptreact = { "prettier" },
         vue = { "prettier" },
 
-        -- ── Sistemas y Compilados ────────────────────────────────────
+        -- ── Systems and compiled languages ───────────────────────────
         python = { "black" },
         rust = { "rustfmt" },
         c = { "clang_format" },
         cpp = { "clang_format" },
         java = { "google-java-format" },
-        go = { "gofmt" }, -- viene con Go del sistema, no Mason
+        go = { "gofmt" }, -- ships with the system Go toolchain, not Mason
 
-        -- ── Ecosistema Móvil ─────────────────────────────────────────
+        -- ── Mobile ecosystem ─────────────────────────────────────────
         swift = { "swiftformat" },
         kotlin = { "ktlint" },
-        dart = { "dart_format" }, -- viene con Flutter SDK
+        dart = { "dart_format" }, -- ships with the Flutter SDK
         scala = { "scalafmt" },
 
-        -- ── Scripting y Automatización ───────────────────────────────
+        -- ── Scripting and automation ─────────────────────────────────
         bash = { "shfmt" },
         sh = { "shfmt" },
         ruby = { "rubyfmt" },
@@ -40,17 +40,17 @@ local options = {
         terraform = { "terraform_fmt" },
         dockerfile = { "prettier" },
 
-        -- ── Ciencia de Datos ─────────────────────────────────────────
+        -- ── Data science ─────────────────────────────────────────────
         r = { "styler" },
         sql = { "sql_formatter", "sqlfluff" },
         mysql = { "sql_formatter", "sqlfluff" },
         plsql = { "sql_formatter", "sqlfluff" },
     },
 
-    -- Formatea al guardar sin bloquear el editor
+    -- Format on save without blocking the editor
     format_on_save = {
         timeout_ms = 1500,
-        lsp_format = "fallback", -- si no hay formateador local, usa el del LSP
+        lsp_format = "fallback", -- use the LSP formatter when none is configured
     },
 }
 

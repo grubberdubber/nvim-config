@@ -1,8 +1,8 @@
 local plugins = {
-    -- ── DESACTIVA nvim-cmp (viene de NvChad base) ───────────────────
+    -- ── DISABLE nvim-cmp (shipped by NvChad) ────────────────────────
     { "hrsh7th/nvim-cmp", enabled = false },
 
-    -- ── BLINK.CMP — Motor de autocompletado ─────────────────────────
+    -- ── BLINK.CMP — completion engine ────────────────────────────────
     {
         "saghen/blink.cmp",
         version = "1.*",
@@ -20,7 +20,7 @@ local plugins = {
         opts_extend = { "sources.default" },
     },
 
-    -- ── AUTOPAIRS (integrado con blink.cmp) ──────────────────────────
+    -- ── AUTOPAIRS (integrated with blink.cmp) ────────────────────────
     {
         "windwp/nvim-autopairs",
         event = "InsertEnter",
@@ -58,7 +58,7 @@ local plugins = {
 
     {
         "HiPhish/rainbow-delimiters.nvim",
-        event = "User FilePost", -- Carga inteligente solo cuando abres un archivo con código
+        event = "User FilePost", -- Lazy-load only when a code file is opened
         config = function()
             require("rainbow-delimiters.setup").setup {
                 blacklist = { "html", "xml", "svg", "xhtml", "htmldjango", "blade", "twig" },
@@ -80,7 +80,7 @@ local plugins = {
         end,
     },
 
-    -- ── 3. INDENT BLANKLINE (Líneas │ siempres visibles + Puntos ·)
+    -- ── 3. INDENT BLANKLINE (always-visible │ guides)
     {
         "lukas-reineke/indent-blankline.nvim",
         event = { "BufReadPre", "BufNewFile" },
@@ -102,6 +102,9 @@ local plugins = {
                     tab_char = "│",
                     highlight = "IblIndentOpaque",
                 },
+                -- The dashboard is a landing screen: no indent guides there.
+                -- Every code buffer keeps the guides enabled.
+                exclude = { filetypes = { "dashboard" } },
                 scope = {
                     enabled = true,
                     char = "│",
@@ -306,7 +309,7 @@ local plugins = {
         lazy = true,
     },
 
-    -- ── ÁRBOL DE SINTAXIS UNIFICADO (TREESITTER + TEXTOBJECTS) ─────
+    -- ── UNIFIED SYNTAX TREE (TREESITTER + TEXTOBJECTS) ─────
     {
         "nvim-treesitter/nvim-treesitter",
         branch = "master",
@@ -377,6 +380,42 @@ local plugins = {
                     },
                 },
             }
+        end,
+    },
+
+    -- ── STICKY CONTEXT (APAGADO POR DEFECTO) ──────────────────────
+    -- Pins the current function/class to the top of the window. Loaded only
+    -- when `:TSContext` or `<leader>uc` is used, and starts disabled.
+    {
+        "nvim-treesitter/nvim-treesitter-context",
+        cmd = "TSContext",
+        opts = {
+            enable = false,
+            max_lines = 3,
+            line_numbers = false,
+            separator = "─",
+        },
+        config = function(_, opts)
+            require("treesitter-context").setup(opts)
+
+            -- Neutral separator: midpoint between the theme's text and
+            -- background colors (a grey that works on light and dark themes).
+            local function tint_separator()
+                local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+                if not normal.fg or not normal.bg then
+                    vim.api.nvim_set_hl(0, "TreesitterContextSeparator", { fg = "#808080" })
+                    return
+                end
+                local function ch(c, s)
+                    return math.floor(c / s) % 256
+                end
+                local r = math.floor((ch(normal.fg, 65536) + ch(normal.bg, 65536)) / 2)
+                local g = math.floor((ch(normal.fg, 256) + ch(normal.bg, 256)) / 2)
+                local b = math.floor((ch(normal.fg, 1) + ch(normal.bg, 1)) / 2)
+                vim.api.nvim_set_hl(0, "TreesitterContextSeparator", { fg = r * 65536 + g * 256 + b })
+            end
+            tint_separator()
+            vim.api.nvim_create_autocmd("ColorScheme", { callback = tint_separator })
         end,
     },
 
@@ -522,20 +561,29 @@ local plugins = {
     {
         "folke/trouble.nvim",
         dependencies = { "nvim-tree/nvim-web-devicons" },
-        cmd = { "Trouble", "TroubleToggle" },
-        config = function()
-            require("trouble").setup { position = "bottom", use_diagnostic_signs = true }
-        end,
+        cmd = "Trouble",
+        opts = {
+            focus = true,
+            auto_preview = true,
+            auto_refresh = true,
+            auto_close = false,
+            win = { position = "bottom", size = 16 },
+            modes = {
+                diagnostics = { win = { position = "bottom", size = 16 } },
+                symbols = { win = { position = "right", size = 40 } },
+                lsp = { win = { position = "right", size = 44 } },
+            },
+        },
     },
 
-    -- ── SURROUND (agregar/cambiar/borrar comillas, tags, paréntesis) ──
+    -- ── SURROUND (add/change/delete quotes, tags, parentheses) ──
     {
         "kylechui/nvim-surround",
         event = { "BufReadPost", "BufNewFile" },
         opts = {},
     },
 
-    -- ── ILLUMINATE (resalta otras apariciones de la variable/función) ──
+    -- ── ILLUMINATE (highlight other occurrences of the symbol) ──
     {
         "RRethy/vim-illuminate",
         event = { "BufReadPost", "BufNewFile" },
@@ -547,7 +595,7 @@ local plugins = {
         end,
     },
 
-    -- ── UFO (folding real con Treesitter/LSP) ─────────────────────
+    -- ── UFO (real folding through Treesitter/LSP) ──────────────────
     {
         "kevinhwang91/nvim-ufo",
         dependencies = { "kevinhwang91/promise-async" },
@@ -565,14 +613,14 @@ local plugins = {
         end,
     },
 
-    -- ── CLIENTE REST (probar APIs sin salir del editor) ────────────
+    -- ── REST CLIENT (exercise APIs without leaving the editor) ─────
     {
         "mistweaverco/kulala.nvim",
         ft = { "http", "rest" },
         opts = {},
     },
 
-    -- ── REFACTORING (extraer variable/función con scope real) ──────
+    -- ── REFACTORING (extract variable/function with real scope) ──────
     {
         "ThePrimeagen/refactoring.nvim",
         dependencies = { "nvim-lua/plenary.nvim", "nvim-treesitter/nvim-treesitter" },
@@ -594,6 +642,14 @@ local plugins = {
         cmd = "ZenMode",
         opts = {
             window = { width = 0.85 },
+            on_open = function(win)
+                -- ZenMode opens a brand-new floating window that inherits the
+                -- default local 'fillchars' (+ / - and the fold line) instead
+                -- of the statuscol triangles. Copy the GLOBAL value, because
+                -- vim.o would read the float's own local value.
+                local fillchars = vim.api.nvim_get_option_value("fillchars", { scope = "global" })
+                vim.api.nvim_set_option_value("fillchars", fillchars, { win = win })
+            end,
         },
     },
     {
@@ -602,7 +658,7 @@ local plugins = {
         opts = {},
     },
 
-    -- ── LATEX (VimTeX + compilación continua + Zathura) ────────────
+    -- ── LATEX (VimTeX + continuous compilation + Zathura) ────────────
     {
         "lervag/vimtex",
         ft = "tex",
@@ -619,7 +675,7 @@ local plugins = {
                     "-interaction=nonstopmode",
                 },
             }
-            vim.g.vimtex_quickfix_mode = 0 -- No abrir quickfix automático en cada warning menor
+            vim.g.vimtex_quickfix_mode = 0 -- Do not open quickfix for every minor warning
             vim.g.vimtex_syntax_conceal = {
                 accents = true,
                 ligatures = true,
@@ -644,7 +700,7 @@ local plugins = {
         dependencies = { "nvim-lua/plenary.nvim" },
     },
 
-    -- ── NAVEGACIÓN COMO BUFFER (OIL) ───────────────────────────────
+    -- ── BUFFER-LIKE NAVIGATION (OIL) ───────────────────────────────
     {
         "stevearc/oil.nvim",
         dependencies = { "nvim-tree/nvim-web-devicons" },
@@ -670,25 +726,25 @@ local plugins = {
         "nvim-telescope/telescope-fzf-native.nvim",
         build = "make",
     },
-    -- ── DEBUG JAVA (requiere setup propio, distinto al resto) ───────
+    -- ── JAVA DEBUG (custom setup, unlike the rest) ──────────────────
     {
         "mfussenegger/nvim-jdtls",
         ft = "java",
     },
 
-    -- ── DEBUG PYTHON MEJORADO (venv-aware, debug de tests con pytest) ──
+    -- ── IMPROVED PYTHON DEBUG (venv-aware, pytest debugging) ────────
     {
         "mfussenegger/nvim-dap-python",
         ft = "python",
         dependencies = { "mfussenegger/nvim-dap" },
     },
 
-    -- ── VALORES DE VARIABLES INLINE AL DEBUGGEAR (todos los lenguajes) ──
+    -- ── INLINE VARIABLE VALUES WHILE DEBUGGING (all languages) ──────
     {
         "theHamsta/nvim-dap-virtual-text",
         dependencies = { "mfussenegger/nvim-dap", "nvim-treesitter/nvim-treesitter" },
         opts = {
-            commented = true, -- Muestra los valores como comentario al final de la línea
+            commented = true, -- Show values as end-of-line comments
         },
     },
     -- ── 6. DAP DEBUGGER ────────────────────────────────────────────
@@ -702,7 +758,7 @@ local plugins = {
         },
         config = function()
             require("mason-nvim-dap").setup {
-                ensure_installed = { "debugpy", "delve", "codelldb", "netcoredbg" },
+                ensure_installed = { "debugpy", "delve", "codelldb", "netcoredbg", "bash-debug-adapter" },
                 automatic_installation = true,
             }
             require "configs.dap"
@@ -712,7 +768,7 @@ local plugins = {
         "nanotee/sqls.nvim",
         ft = { "sql", "mysql", "plsql" },
     },
-    -- ── TODO/FIXME/BUG EN COMENTARIOS (integrado con Trouble) ────────
+    -- ── TODO/FIXME/BUG COMMENTS (integrated with Trouble) ────────────
     {
         "folke/todo-comments.nvim",
         dependencies = { "nvim-lua/plenary.nvim" },
@@ -730,21 +786,21 @@ local plugins = {
         },
     },
 
-    -- ── NOTA RÁPIDA POR PROYECTO (ventana flotante) ──────────────────
+    -- ── QUICK PROJECT NOTE (floating window) ──────────────────
     {
         "backdround/global-note.nvim",
         cmd = { "GlobalNote", "ProjectNote" },
         opts = {
             filename = "global.md",
             directory = vim.fn.stdpath "data" .. "/global-note/",
-            title = "Notas globales",
+            title = "Global notes",
             window_config = function()
                 local h = vim.api.nvim_list_uis()[1].height
                 local w = vim.api.nvim_list_uis()[1].width
                 return {
                     relative = "editor",
                     border = "rounded",
-                    title = "Notas",
+                    title = "Notes",
                     title_pos = "center",
                     width = math.floor(0.7 * w),
                     height = math.floor(0.75 * h),
@@ -762,25 +818,25 @@ local plugins = {
                         return name .. ".md"
                     end,
                     directory = vim.fn.stdpath "data" .. "/global-note/projects/",
-                    title = "Notas del proyecto",
+                    title = "Project notes",
                     command_name = "ProjectNote",
                 },
             },
         },
     },
 
-    -- ── COLUMNA IZQUIERDA CUSTOM: Breakpoints > Git > Número > Fold ──
+    -- ── CUSTOM LEFT COLUMN: breakpoints > git > line number > fold ──
     {
         "luukvbaal/statuscol.nvim",
         event = { "BufReadPost", "BufNewFile" },
         config = function()
             local builtin = require "statuscol.builtin"
 
-            -- Triángulos estilo VS Code en vez de flechitas clásicas de Vim,
-            -- y sin línea vertical conectando los niveles de pliegue.
+            -- VS Code style triangles instead of Vim's classic arrows, with no
+            -- vertical line connecting fold levels.
             vim.opt.fillchars:append {
-                foldopen = "▼", -- pliegue ABIERTO (expandido) — triángulo sólido, más visible
-                foldclose = "▶", -- pliegue CERRADO (colapsado) — triángulo sólido, más visible
+                foldopen = "▼", -- open fold (expanded): solid triangle, easier to see
+                foldclose = "▶", -- closed fold (collapsed): solid triangle, easier to see
                 foldsep = " ",
             }
             require("statuscol").setup {
@@ -791,8 +847,8 @@ local plugins = {
                         sign = { name = { "Dap" }, maxwidth = 1, colwidth = 1, auto = true },
                         click = "v:lua.ScSa",
                     },
-                    -- 2. Git signs — filtra por NAMESPACE, no por nombre
-                    -- (gitsigns moderno usa extmarks, no :sign-define clásico)
+                    -- 2. Git signs — filter by NAMESPACE, not by name
+                    -- (modern gitsigns uses extmarks, not the classic :sign define)
                     {
                         sign = {
                             namespace = { "gitsigns" },
@@ -803,9 +859,9 @@ local plugins = {
                         },
                         click = "v:lua.ScSa",
                     },
-                    -- 3. Numeración híbrida (absoluta en cursor, relativa el resto)
+                    -- 3. Hybrid numbering (absolute at the cursor, relative elsewhere)
                     { text = { builtin.lnumfunc, " " }, click = "v:lua.ScLa" },
-                    -- 4. Fold column — triángulos, sin dígitos de anidación
+                    -- 4. Fold column: triangles without nesting digits
                     { text = { builtin.foldfunc }, click = "v:lua.ScFa" },
                 },
             }
@@ -829,14 +885,14 @@ local plugins = {
         end,
     },
 
-    -- ── SURROUND (agregar/cambiar/borrar comillas, tags, paréntesis) ──
+    -- ── SURROUND (add/change/delete quotes, tags, parentheses) ──
     {
         "kylechui/nvim-surround",
         event = { "BufReadPost", "BufNewFile" },
         opts = {},
     },
 
-    -- ── ILLUMINATE (resalta otras apariciones de la variable/función) ──
+    -- ── ILLUMINATE (highlight other occurrences of the symbol) ──
     {
         "RRethy/vim-illuminate",
         event = { "BufReadPost", "BufNewFile" },
@@ -848,14 +904,14 @@ local plugins = {
         end,
     },
 
-    -- ── AVANTE.NVIM: IA agente (chat/edición asistida) con Gemini ────
-    -- Distinto de Codeium: Codeium sugiere código inline mientras
-    -- escribís, Avante es un asistente tipo Cursor — le pedís cosas
-    -- en lenguaje natural y edita/explica/genera código con contexto
-    -- completo del proyecto. No compiten, se complementan.
+    -- ── AVANTE.NVIM: agentic AI (chat/assisted edits) with Gemini ────
+    -- Unlike Codeium (inline suggestions while typing), Avante is a
+    -- Cursor-style assistant: ask in natural language and it edits,
+    -- explains or generates code with project context.
+    -- with full project context. They complement each other.
     {
         "yetone/avante.nvim",
-        version = false, -- Sigue la última versión, no un tag fijo
+        version = false, -- Track the latest release instead of a fixed tag
         build = "make",
         event = "VeryLazy",
         dependencies = {
@@ -864,6 +920,8 @@ local plugins = {
             "nvim-lua/plenary.nvim",
             "MunifTanjim/nui.nvim",
             "nvim-tree/nvim-web-devicons",
+            -- Required by avante's command parser (mega.cmdparse).
+            { "ColinKennedy/mega.cmdparse", dependencies = { "ColinKennedy/mega.logging" } },
             {
                 "MeanderingProgrammer/render-markdown.nvim",
                 opts = { file_types = { "markdown", "Avante" } },
@@ -871,7 +929,7 @@ local plugins = {
             },
         },
         opts = {
-            provider = "gemini", -- Arranca siempre con el más potente
+            provider = "gemini", -- Always start with the most capable model
 
             providers = {
                 gemini = {
@@ -909,7 +967,7 @@ local plugins = {
         },
     },
 
-    -- ── UFO (folding real con Treesitter/LSP) ─────────────────────
+    -- ── UFO (real folding through Treesitter/LSP) ──────────────────
     {
         "kevinhwang91/nvim-ufo",
         dependencies = { "kevinhwang91/promise-async" },
@@ -927,14 +985,14 @@ local plugins = {
         end,
     },
 
-    -- ── CLIENTE REST (probar APIs sin salir del editor) ────────────
+    -- ── REST CLIENT (exercise APIs without leaving the editor) ─────
     {
         "mistweaverco/kulala.nvim",
         ft = { "http", "rest" },
         opts = {},
     },
 
-    -- ── REFACTORING (extraer variable/función con scope real) ──────
+    -- ── REFACTORING (extract variable/function with real scope) ──────
     {
         "ThePrimeagen/refactoring.nvim",
         dependencies = { "nvim-lua/plenary.nvim", "nvim-treesitter/nvim-treesitter" },
@@ -956,6 +1014,14 @@ local plugins = {
         cmd = "ZenMode",
         opts = {
             window = { width = 0.85 },
+            on_open = function(win)
+                -- ZenMode opens a brand-new floating window that inherits the
+                -- default local 'fillchars' (+ / - and the fold line) instead
+                -- of the statuscol triangles. Copy the GLOBAL value, because
+                -- vim.o would read the float's own local value.
+                local fillchars = vim.api.nvim_get_option_value("fillchars", { scope = "global" })
+                vim.api.nvim_set_option_value("fillchars", fillchars, { win = win })
+            end,
         },
     },
     {
@@ -964,7 +1030,7 @@ local plugins = {
         opts = {},
     },
 
-    -- ── LATEX (VimTeX + compilación continua + Zathura) ────────────
+    -- ── LATEX (VimTeX + continuous compilation + Zathura) ────────────
     {
         "lervag/vimtex",
         ft = "tex",

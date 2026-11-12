@@ -5,7 +5,7 @@ local on_init = nvchad_lsp.on_init
 local capabilities = require("blink.cmp").get_lsp_capabilities(nvchad_lsp.capabilities)
 
 -- ╔══════════════════════════════════════════════════════════════╗
--- ║  CONFIG BASE PARA TODOS LOS SERVIDORES                       ║
+-- ║  BASE CONFIG FOR EVERY SERVER                                ║
 -- ╚══════════════════════════════════════════════════════════════╝
 vim.lsp.config("*", {
     on_attach = on_attach,
@@ -14,7 +14,7 @@ vim.lsp.config("*", {
 })
 
 -- ╔══════════════════════════════════════════════════════════════╗
--- ║  LISTA MAESTRA — Servidores LSP                              ║
+-- ║  MASTER LIST — LSP servers                                   ║
 -- ╚══════════════════════════════════════════════════════════════╝
 local servers = {
     "html",
@@ -46,7 +46,7 @@ local servers = {
     "svelte",
 }
 
--- ── Pyright: análisis avanzado ────────────────────────────────
+-- ── Pyright: advanced analysis ────────────────────────────────
 vim.lsp.config("pyright", {
     settings = {
         python = {
@@ -61,7 +61,7 @@ vim.lsp.config("pyright", {
     },
 })
 
--- ── omnisharp: soporte para archivos .cs sueltos (sin .sln/.csproj) ──
+-- ── omnisharp: support standalone .cs files (no .sln/.csproj) ──
 vim.lsp.config("omnisharp", {
     root_dir = function(bufnr, on_dir)
         local fname = vim.api.nvim_buf_get_name(bufnr)
@@ -71,10 +71,10 @@ vim.lsp.config("omnisharp", {
     single_file_support = true,
 })
 
--- ── emmet_ls: ampliar cobertura más allá del default (HTML/CSS/JSX/Vue/Svelte) ──
+-- ── emmet_ls: extend coverage beyond the default (HTML/CSS/JSX/Vue/Svelte) ──
 vim.lsp.config("emmet_ls", {
     filetypes = {
-        -- Ya vienen por defecto en nvim-lspconfig:
+        -- Already provided by nvim-lspconfig defaults:
         "html",
         "css",
         "scss",
@@ -90,7 +90,7 @@ vim.lsp.config("emmet_ls", {
         "htmldjango",
         "htmlangular",
         "templ",
-        -- Agregados a mano:
+        -- Added manually:
         "xml",
         "xsl",
         "stylus",
@@ -99,31 +99,31 @@ vim.lsp.config("emmet_ls", {
     },
 })
 
--- ── sqls: LSP multi-motor (MySQL, PostgreSQL, SQLite3, MSSQL, H2, Vertica) ──
+-- ── sqls: multi-engine LSP (MySQL, PostgreSQL, SQLite3, MSSQL, H2, Vertica) ──
 vim.lsp.config("sqls", {
     cmd = { "sqls" },
     filetypes = { "sql", "mysql", "plsql" },
     on_attach = function(client, bufnr)
-        require("sqls").on_attach(client, bufnr) -- habilita comandos de sqls (ejecutar query, cambiar conexión)
+        require("sqls").on_attach(client, bufnr) -- enables sqls commands (run query, switch connection)
     end,
     settings = {
         sqls = {
             connections = {
-                -- Editá estos con tus credenciales reales, o dejalos de ejemplo
-                -- y usá el comando "Switch Connection" de sqls.nvim para elegir.
+                -- Replace these with real credentials, or keep them as examples
+                -- and use sqls.nvim's "Switch Connection" command.
                 { driver = "mysql", dataSourceName = "root:root@tcp(127.0.0.1:3306)/dbname" },
                 {
                     driver = "postgresql",
                     dataSourceName = "host=127.0.0.1 port=5432 user=postgres password=postgres dbname=dbname sslmode=disable",
                 },
-                { driver = "sqlite3", dataSourceName = "/ruta/a/tu/archivo.sqlite3" },
-                { driver = "mssql", dataSourceName = "sqlserver://usuario:password@127.0.0.1:1433?database=dbname" },
+                { driver = "sqlite3", dataSourceName = "/path/to/your/file.sqlite3" },
+                { driver = "mssql", dataSourceName = "sqlserver://user:password@127.0.0.1:1433?database=dbname" },
             },
         },
     },
 })
 
--- ── Lua: desarrollo de Neovim ──────────────────────────────────
+-- ── Lua: Neovim development ─────────────────────────────────────
 vim.lsp.config("lua_ls", {
     settings = {
         Lua = {
@@ -134,7 +134,7 @@ vim.lsp.config("lua_ls", {
     },
 })
 
--- ── texlab: LSP de LaTeX (autocompletado de comandos, referencias, build) ──
+-- ── texlab: LaTeX LSP (command completion, references, build) ──
 vim.lsp.config("texlab", {
     settings = {
         texlab = {
@@ -149,7 +149,7 @@ vim.lsp.config("texlab", {
         },
     },
 })
--- ── yamlls: validación de esquemas (Kubernetes, Docker Compose, GitHub Actions) ──
+-- ── yamlls: schema validation (Kubernetes, Docker Compose, GitHub Actions) ──
 vim.lsp.config("yamlls", {
     settings = {
         yaml = {
@@ -164,7 +164,7 @@ vim.lsp.config("yamlls", {
     },
 })
 
--- ── jsonls: validación de esquemas vía SchemaStore ──────────────
+-- ── jsonls: schema validation through SchemaStore ───────────────
 vim.lsp.config("jsonls", {
     settings = {
         json = {

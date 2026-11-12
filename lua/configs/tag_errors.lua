@@ -1,11 +1,11 @@
 -- lua/configs/tag_errors.lua
--- Pinta en rojo los delimitadores `<  >  </  />` cuando Tree-sitter detecta una etiqueta mal formada
--- (cierre que no corresponde, `>` faltante, `<` suelto, JSX/XML sin cerrar...). Funciona para cualquier
--- gramática con etiquetas: html, xml, vue, svelte, astro, jsx/tsx, templ, ... y también para HTML
--- inyectado (markdown, php, etc.) porque recorre todo el LanguageTree.
+-- Paints the `<  >  </  />` delimiters red when Tree-sitter detects a malformed tag
+-- (mismatched close, missing `>`, stray `<`, unclosed JSX/XML...). Works for any
+-- tag-based grammars: html, xml, vue, svelte, astro, jsx/tsx, templ, and plain HTML
+-- injected tree (markdown, php, etc.) because it walks the whole LanguageTree.
 --
--- Diseño: decoration provider con extmarks *efímeros* -> solo se calcula lo visible, nada se
--- guarda en el buffer, cero autocmds y cero latencia al teclear (reutiliza el árbol del highlighter).
+-- Design: a decoration provider with *ephemeral* extmarks, so only visible lines are computed, nothing is
+-- stored in the buffer, zero autocmds and zero typing latency (it reuses the highlighter tree).
 local M = {}
 
 local ns = vim.api.nvim_create_namespace "tag_errors"
@@ -38,9 +38,9 @@ local FT = {
     twig = true,
 }
 
--- Tokens anónimos que son delimitadores de etiqueta
+-- Anonymous tokens that act as tag delimiters
 local DELIM = { ["<"] = true, [">"] = true, ["</"] = true, ["/>"] = true }
--- Nodos "de etiqueta" (se pintan sus delimitadores si cuelgan de un ERROR)
+-- "Tag-like" nodes (their delimiters are painted when they hang off an ERROR)
 local function tag_like(t)
     return t:find("tag", 1, true)
         or t:find("STag", 1, true)
@@ -50,18 +50,18 @@ local function tag_like(t)
         or t:find("self_closing", 1, true)
 end
 
--- ── Reglas SOLO para HTML (en XML/JSX/Vue/Svelte `<x />` y `<Comp />` son válidos) ──────────────
--- Elementos void: únicos que pueden escribirse `<br>` / `<img />` sin cierre en HTML
+-- ── HTML-ONLY rules (in XML/JSX/Vue/Svelte `<x />` and `<Comp />` are valid) ──────────────
+-- Void elements: the only ones that may be written `<br>` / `<img />` without a close tag in HTML
 local VOID = {}
 for t in ("area base br col embed hr img input link meta param source track wbr keygen"):gmatch "%S+" do
     VOID[t] = true
 end
--- Elementos con etiqueta de cierre opcional (WHATWG "optional tags")
+-- Elements whose closing tag is optional (WHATWG "optional tags")
 local OPTIONAL_END = {}
 for t in ("html head body p li dt dd rt rp optgroup option colgroup caption thead tbody tfoot tr td th"):gmatch "%S+" do
     OPTIONAL_END[t] = true
 end
-local FOREIGN = { svg = true, math = true } -- aquí `<path />` sí es válido
+local FOREIGN = { svg = true, math = true } -- `<path />` is valid here
 
 local function tag_name_of(node, buf)
     for child in node:iter_children() do
@@ -95,7 +95,7 @@ local function query_for(lang)
     if q ~= nil then
         return q
     end
-    -- Cada patrón es opcional: no todas las gramáticas tienen erroneous_end_tag
+    -- Every pattern is optional: not all grammars have erroneous_end_tag
     local ok, parsed = pcall(vim.treesitter.query.parse, lang, "(ERROR) @err (MISSING) @miss (erroneous_end_tag) @bad")
     if not ok then
         ok, parsed = pcall(vim.treesitter.query.parse, lang, "(ERROR) @err (MISSING) @miss")
@@ -109,7 +109,7 @@ local function mark(out, node)
     out[#out + 1] = { sr, sc, er, ec }
 end
 
--- delimitadores directos de `node`
+-- direct delimiters of `node`
 local function delims_of(out, node)
     for child in node:iter_children() do
         if not child:named() and DELIM[child:type()] then
@@ -118,7 +118,7 @@ local function delims_of(out, node)
     end
 end
 
--- Marca `<`, nombre y delimitador de cierre de una etiqueta
+-- Mark a tag's `<`, name and closing delimiter
 local function mark_tag(out, tag, buf)
     for child in tag:iter_children() do
         if (not child:named() and DELIM[child:type()]) or child:type() == "tag_name" then
@@ -132,7 +132,7 @@ local function html_rules(out, root, buf, top, bot)
     for id, node in q:iter_captures(root, buf, top, bot + 1) do
         local cap = q.captures[id]
         if cap == "sct" then
-            -- `<h1/>`, `<div />`: auto-cierre en un elemento que no es void ni SVG/MathML
+            -- `<h1/>`, `<div />`: self-closing a non-void, non-SVG/MathML element
             local _, name = tag_name_of(node, buf)
             if name and not VOID[name] and not in_foreign(node, buf) then
                 mark_tag(out, node, buf)
@@ -148,7 +148,7 @@ local function html_rules(out, root, buf, top, bot)
                 end
                 local _, name = tag_name_of(first, buf)
                 if not has_end and name and not VOID[name] and not OPTIONAL_END[name] and not in_foreign(node, buf) then
-                    -- no molestar mientras se escribe en esa misma línea (modo insertar)
+                    -- do not nag while typing on that same line (insert mode)
                     local row = first:range()
                     local typing = vim.fn.mode():sub(1, 1) == "i" and vim.api.nvim_win_get_cursor(0)[1] - 1 == row
                     if not typing then
@@ -160,7 +160,7 @@ local function html_rules(out, root, buf, top, bot)
     end
 end
 
----@return integer[][] rangos {sr, sc, er, ec} a pintar en rojo (sin duplicados)
+---@return integer[][] ranges {sr, sc, er, ec} to paint red (deduplicated)
 function M.collect(buf, top, bot)
     local out = {}
     local ok, parser = pcall(vim.treesitter.get_parser, buf, nil, { error = false })
@@ -180,13 +180,13 @@ function M.collect(buf, top, bot)
         for id, node in q:iter_captures(tree:root(), buf, top, bot + 1) do
             local cap = q.captures[id]
             if cap == "bad" then
-                -- </span> sin pareja: todo el cierre
+                -- unmatched </span>: the whole closing tag
                 mark(out, node)
             elseif cap == "miss" then
                 local t = node:type()
                 local parent = node:parent()
                 if parent and (DELIM[t] or t:match "^[<>/]") then
-                    -- `>` faltante: se pinta el `<` de apertura de la misma etiqueta
+                    -- missing `>`: paint the opening `<` of the same tag
                     for child in parent:iter_children() do
                         if not child:named() and (child:type() == "<" or child:type() == "</") then
                             mark(out, child)
@@ -207,8 +207,8 @@ function M.collect(buf, top, bot)
     return out
 end
 
--- Rojo propio e independiente del tema: más "puro" que el rojo láser/rosa del tema, con fondo
--- rojo oscuro y subrayado ondulado, para que NUNCA se confunda con la sintaxis normal.
+-- Dedicated red independent of the theme: purer than the theme's laser/pink red, with a dark background
+-- dark background and undercurl so it can NEVER be confused with normal syntax.
 local COLOR = { fg = "#FF3B3B", bg = "#3D0A10", sp = "#FF3B3B" }
 local function define_hl()
     vim.api.nvim_set_hl(0, HL, { fg = COLOR.fg, bg = COLOR.bg, sp = COLOR.sp, bold = true, undercurl = true })

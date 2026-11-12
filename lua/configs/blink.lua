@@ -1,5 +1,5 @@
--- Iconos y colores de css_selectors. El icono se decide por el campo propio
--- `sel_kind`, no por source_id (así gana aunque el LSP ofrezca la misma palabra).
+-- Icons and colors for css_selectors. The icon is chosen from the custom
+-- `sel_kind` rather than source_id, so it wins even when the LSP offers the same word.
 local SELECTOR = {
     class = { icon = ".", hl = "BlinkCmpSelectorClass" },
     id = { icon = "#", hl = "BlinkCmpSelectorId" },
@@ -9,10 +9,10 @@ vim.api.nvim_set_hl(0, "BlinkCmpSelectorClass", { link = "Type", default = true 
 vim.api.nvim_set_hl(0, "BlinkCmpSelectorId", { link = "Constant", default = true })
 vim.api.nvim_set_hl(0, "BlinkCmpSelectorVar", { link = "Special", default = true })
 
--- En contexto de clase/id/variable: si css_selectors ya conoce el nombre, se
--- quita el duplicado del LSP/buffer (así queda una sola fila, con su icono).
--- Los items de tailwindcss se conservan (traen previsualización de color) y
--- reciben la marca para pintarse con el icono.
+-- In class/id/variable context: if css_selectors already knows the name, it
+-- drop the LSP/buffer duplicate so a single row keeps its icon.
+-- tailwindcss items are kept (they carry a color preview) and
+-- receive the marker so they are painted with the icon.
 local function force_selector_kind(ctx, items)
     local ok, cs = pcall(require, "configs.css_selectors")
     if not ok then
@@ -40,8 +40,8 @@ return {
     keymap = {
         preset = "default",
 
-        -- ── Tab: SOLO skip de cierres (paréntesis/llaves/etiquetas HTML/puntuación) ──
-        -- Nunca toca el menú de autocompletado.
+        -- ── Tab: closing-bracket jump only (parentheses/braces/HTML tags/punctuation) ──
+        -- Never touches the completion menu.
         ["<Tab>"] = {
             "select_next",
             function(_)
@@ -49,9 +49,9 @@ return {
                 local col = vim.api.nvim_win_get_cursor(0)[2]
                 local after_cursor = line:sub(col + 1)
 
-                -- Etiqueta de cierre HTML/XML completa -> salta TODA la etiqueta
-                -- de un tirón (esto sí mueve varios caracteres a propósito,
-                -- porque es un bloque semántico, no un símbolo suelto)
+                -- Full HTML/XML closing tag -> jump over the WHOLE tag
+                -- in one go (this intentionally moves several characters,
+                -- because it is a semantic block, not a single symbol)
                 local closing_tag = after_cursor:match "^</[%w%-%.]+>"
                 if closing_tag then
                     local right = vim.api.nvim_replace_termcodes(string.rep("<Right>", #closing_tag), true, false, true)
@@ -59,7 +59,7 @@ return {
                     return true
                 end
 
-                -- Cualquier símbolo/puntuación suelto -> avanza UN carácter
+                -- Any loose symbol/punctuation -> advance ONE character
                 local next_char = after_cursor:sub(1, 1)
                 if next_char ~= "" and next_char:match "%p" then
                     local right = vim.api.nvim_replace_termcodes("<Right>", true, false, true)
@@ -72,16 +72,16 @@ return {
             "snippet_forward",
             "fallback",
         },
-        -- ── Shift-Tab: subir en el menú (y retroceder en un snippet) ──
+        -- ── Shift-Tab: move up in the menu (and back through snippets) ──
         ["<S-Tab>"] = { "select_prev", "snippet_backward", "fallback" },
         ["<C-n>"] = { "select_next", "fallback" },
         ["<C-p>"] = { "select_prev", "fallback" },
         ["<Up>"] = { "select_prev", "fallback" },
         ["<Down>"] = { "select_next", "fallback" },
-        -- ── Enter: SIEMPRE salto de línea, nunca acepta nada ─────────
+        -- ── Enter: ALWAYS a newline, never accepts a suggestion ─────────
         ["<CR>"] = { "fallback" },
 
-        -- ── Ctrl-y: aceptar sugerencia resaltada (universal, sin líos de terminal) ──
+        -- ── Ctrl-y: accept the highlighted suggestion (works everywhere) ──
         ["<C-y>"] = { "select_and_accept", "fallback" },
 
         ["<C-e>"] = { "hide", "fallback" },
@@ -126,7 +126,7 @@ return {
         },
         trigger = {
             show_on_trigger_character = true,
-            show_on_blocked_trigger_characters = {}, -- no bloquear ningún disparador (afecta a Emmet)
+            show_on_blocked_trigger_characters = {}, -- do not block any trigger (affects Emmet)
         },
     },
 
@@ -161,7 +161,7 @@ return {
             buffer = {
                 transform_items = force_selector_kind,
                 opts = {
-                    -- Busca en todos los buffers abiertos, no solo en el actual
+                    -- Search every open buffer, not only the current one
                     get_bufnrs = function()
                         return vim.tbl_filter(function(buf)
                             return vim.bo[buf].buflisted and vim.bo[buf].buftype == ""

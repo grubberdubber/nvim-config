@@ -2,7 +2,7 @@ return {
     {
         "Wansmer/treesj",
         cmd = { "TSJToggle", "TSJSplit", "TSJJoin" },
-        keys = { { "<leader>J", "<cmd>TSJToggle<cr>", desc = "Dividir/unir bloque" } },
+        keys = { { "<leader>J", "<cmd>TSJToggle<cr>", desc = "Split/join block" } },
         opts = { use_default_keymaps = false },
     },
     {
@@ -14,14 +14,14 @@ return {
                 function()
                     require("grug-far").open { transient = true }
                 end,
-                desc = "Buscar y reemplazar globalmente",
+                desc = "Global search and replace",
             },
             {
                 "<leader>sw",
                 function()
                     require("grug-far").open { transient = true, prefills = { search = vim.fn.expand "<cword>" } }
                 end,
-                desc = "Reemplazar palabra bajo el cursor",
+                desc = "Replace word under cursor",
             },
         },
         opts = {},
