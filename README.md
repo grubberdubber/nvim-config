@@ -1,274 +1,303 @@
 <div align="center">
 
-# 🌙 nvim-config
+# Neovim Configuration
 
-### Your trusted femboy brings you a perfect Neovim configuration.
+A modular, fast-starting Neovim IDE built on NvChad v2.5 and lazy.nvim.
 
-_You know, the usual stuff._
-
-![Neovim](https://img.shields.io/badge/Neovim-0.11+-57A143?style=for-the-badge&logo=neovim&logoColor=white)
-![Arch](https://img.shields.io/badge/I_use-Arch_btw-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white)
-![NvChad](https://img.shields.io/badge/Built_on-NvChad_v2.5-5de4c7?style=for-the-badge)
-![Lua](https://img.shields.io/badge/Lua-100%25-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
-
-<img src="assets/ALLinstalled.png" alt="Plugins and Mason overview" width="90%">
+![Neovim](https://img.shields.io/badge/Neovim-0.12+-57A143?style=for-the-badge&logo=neovim&logoColor=white)
+![Arch Linux](https://img.shields.io/badge/Platform-Arch_Linux-1793D1?style=for-the-badge&logo=arch-linux&logoColor=white)
+![NvChad](https://img.shields.io/badge/Base-NvChad_v2.5-5de4c7?style=for-the-badge)
+![Lua](https://img.shields.io/badge/Language-Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white)
 
 </div>
 
 ---
 
-## ⚠️ Disclaimer: this config is ACTUALLY ONLY FOR ARCH LINUX
+## Overview
 
-Yes, really. The bootstrap script talks to `pacman`, and I am not sorry.
-Ubuntu, Fedora, macOS and Windows users are welcome to read the Lua and steal ideas, which is the whole point of open source.
-Support for other distros is on the roadmap. _"Works on my machine" is a certified feature of this repo._
+This repository contains a complete Neovim configuration for daily software development:
+LSP, completion, formatting, linting, debugging, Git, databases, HTTP requests, Markdown,
+and broad language support. It is built on NvChad v2.5, uses lazy.nvim for plugin
+management, and keeps application logic in small, testable Lua modules.
 
----
+The configuration targets **Neovim 0.12+ on Arch Linux**. The Lua configuration is
+portable, but `bootstrap.sh` uses `pacman` and is intentionally Arch-specific.
 
-## ✨ Why this config exists
-
-Most Neovim configs are either a 3-line `init.lua` or a 40-plugin Jenga tower that loads in two seconds.
-This one aims for the middle: **a real IDE that starts fast and does not get in your way.**
-
-- **Lazy by default.** Everything loads on an event, command or filetype, and nothing else. `defaults = { lazy = true }` is not decoration.
-- **Reproducible.** `lazy-lock.json` pins every plugin, and `bootstrap.sh` installs system packages, plugins, parsers and every Mason tool in one go.
-- **Theme-aware.** Rainbow delimiters, completion colors and the cursorline all follow whatever NvChad theme you pick. No hardcoded colors fighting your palette.
-- **Opinionated, but justified.** One tool per job. If two plugins did the same thing, one of them got evicted (RIP `neogit` and `nvim-spectre`).
-
----
-
-## 🖼️ Themes
-
-Swapping themes recolors _everything_, including the rainbow brackets and the completion menu.
+## Screenshots
 
 <table>
   <tr>
-    <td><img src="assets/myfavthemeandfeatures.png" alt="BEST THEME"></td>
-    <td><img src="assets/cyberkali_theme.png" alt="cyberkali theme"></td>
+    <td width="50%">
+      <img src="assets/fluorodark_dashboard.png" alt="Custom dashboard">
+    </td>
+    <td width="50%">
+      <img src="assets/fluorodark_editor.png" alt="Editor with LSP, winbar and statusline">
+    </td>
   </tr>
   <tr>
-    <td><img src="assets/blink.png" alt="Auto Completation"></td>
-    <td><img src="assets/config_init.png" alt="init config neovim"></td>
+    <td align="center"><sub>Dashboard: project status, sessions, diagnostics and launchers</sub></td>
+    <td align="center"><sub>Editor: treesitter syntax, winbar, diagnostics and statusline</sub></td>
   </tr>
 </table>
 
----
+![Trouble diagnostics panel](assets/trouble_diagnostics.png)
 
-## 🐛 Debugging
+## Design principles
 
-A full DAP setup with a UI, virtual text and the standard IDE keys (`F5`, `F9`, `F10`, `F11`...). Because `print("here")` is not a debugger.
+- **Lazy by default.** Plugins load on an event, command, key or filetype. Nothing loads
+  speculatively, and the dashboard is available before third-party plugins.
+- **Small modules, single responsibility.** LSP, formatting, linting, debugging,
+  completion and the dashboard live in separate files under `lua/configs/` and
+  `lua/dashboard/`.
+- **Reproducible.** `lazy-lock.json` pins plugin revisions; `bootstrap.sh` installs system
+  packages, plugins, Tree-sitter parsers and Mason tools.
+- **Theme-derived colors.** Highlights use the active theme rather than hardcoded values,
+  so switching themes does not leave orphaned colors.
+- **Asynchronous by default.** External processes use `vim.system` or job callbacks; the
+  editor does not block on Git, formatters or language servers.
 
-<img src="assets/hello_kitty_theme.png" alt="Debugger UI and Cute theme of Hello Kitty" width="90%">
+## Requirements
 
----
+| Component | Requirement |
+| --- | --- |
+| Neovim | 0.12 or newer |
+| OS | Arch Linux (for `bootstrap.sh`) |
+| Terminal | Kitty, or any terminal with true color and a Nerd Font |
+| Build tools | `git`, `make`, `cargo` (avante.nvim) |
+| Search | `ripgrep`, `fd` |
+| Runtime | `nodejs`, `tree-sitter-cli`, `jq` (optional, for Hurl) |
 
-## 🚀 Installation (Arch Linux)
+Install the base toolchain on Arch:
 
 ```bash
-# 1. Minimal prerequisite
-sudo pacman -Syu --needed git
-
-# 2. Back up any existing config, then clone
-mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null
-git clone https://github.com/grubberdubber/nvim-config ~/.config/nvim
-
-# 3. Run the bootstrap
-~/.config/nvim/bootstrap.sh          # core toolchain
-~/.config/nvim/bootstrap.sh --full   # + Java, PHP, .NET, LaTeX, Zathura
+sudo pacman -Syu --needed git base-devel ripgrep fd nodejs tree-sitter-cli cargo
 ```
 
-The first run takes **10 to 20 minutes** (Mason and Tree-sitter parsers compile a lot). Go make coffee. Or tea. I will not judge.
+Set your terminal font to a Nerd Font, or icons will render as missing glyphs.
 
-**What the bootstrap does**
+## Installation
 
-1. Runs `pacman -Syu` first. Partial upgrades on Arch are how you meet a broken `node` at 2 AM.
-2. Installs the system dependencies (`ripgrep`, `fd`, `nodejs`, `tree-sitter-cli`, a Nerd Font, ...).
-3. Restores exact plugin versions from `lazy-lock.json`.
-4. Builds the Tree-sitter parsers and compiles `avante.nvim`.
-5. Installs every LSP, formatter, linter and debugger through Mason.
-6. Verifies the result and tells you honestly what is missing.
+Back up an existing configuration and clone this repository:
 
-> **Heads up:** the script has not been battle-tested on a pristine install yet. It reports failures and keeps going instead of exploding. If something breaks, please [open an issue](../../issues).
+```bash
+mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null
+git clone https://github.com/grubberdubber/nvim-config.git ~/.config/nvim
+```
 
-Do not forget to set your terminal font to a **Nerd Font**, or the icons will look like tofu.
+Run the bootstrap script:
 
----
+```bash
+~/.config/nvim/bootstrap.sh          # core toolchain
+~/.config/nvim/bootstrap.sh --full   # plus Java, PHP, .NET, LaTeX and extra toolchains
+```
 
-## 🧰 What's inside
+The first run can take 10–20 minutes because Mason installs language servers and
+Tree-sitter compiles parsers. The script runs a full `pacman -Syu` first, restores plugin
+revisions from `lazy-lock.json`, and reports any tool it could not install.
 
-### Core
+After the first start, verify the installation:
 
-| Area       | Tools                                                                                    |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| Base       | [NvChad](https://github.com/NvChad/NvChad) v2.5, `lazy.nvim`, `which-key.nvim`           |
-| Completion | `blink.cmp` with LSP, path, snippets, buffer and Dadbod sources                          |
-| AI         | `avante.nvim` with automatic model fallback when your quota runs out, plus `codeium.vim` |
-| Syntax     | `nvim-treesitter` + textobjects, `rainbow-delimiters.nvim`, `nvim-ufo` folds             |
-| Formatting | `conform.nvim` (format on save, LSP fallback)                                            |
-| Linting    | `nvim-lint` (`sqlfluff` with dialect picker, `stylelint`, `markdownlint-cli2`)           |
-| Tooling    | `mason.nvim` + `mason-lspconfig`, `schemastore.nvim`                                     |
+```bash
+nvim --headless "+checkhealth" +qa
+```
 
-### Navigation and editing
-
-| Area           | Tools                                                                              |
-| -------------- | ---------------------------------------------------------------------------------- |
-| Files          | `nvim-tree`, `oil.nvim`, `harpoon`, `telescope` + `fzf-native`                     |
-| Code map       | `aerial.nvim`, `trouble.nvim`, `todo-comments.nvim`                                |
-| Editing        | `nvim-surround`, `nvim-autopairs`, `nvim-ts-autotag`, `multicursor.nvim`, `treesj` |
-| Search/replace | `grug-far.nvim`                                                                    |
-| Refactor       | `refactoring.nvim`                                                                 |
-| Git            | `gitsigns.nvim`, `diffview.nvim`, `lazygit.nvim`                                   |
-| Sessions       | `persistence.nvim`                                                                 |
-
-### Special features
-
-- 🌈 **Rainbow brackets inside the completion docs.** Blink paints its documentation window with its own extmarks, so `rainbow-delimiters` never reached it. A small patch in `autocmds.lua` colors them with the same theme-linked groups, in every language that has a rainbow query. Yes, I went there.
-- 🧠 **Gemini quota cascade.** When Avante hits a rate limit, it steps down to the next model on its own. No more rage-quitting mid-refactor.
-- 🧱 **Smart HTML Enter and Backspace.** VS Code-style splitting between `<tag>` and `</tag>`, with column-aware backspace.
-- 🗄️ **SQL that knows your dialect.** `vim-dadbod`, `sqls.nvim` and a dialect picker for MySQL, PostgreSQL and friends.
-- 🧪 **Run code in place.** `iron.nvim` for REPLs and `sniprun` for quick snippets.
-- 🚪 **`q` closes the junk.** NvimTree, Aerial, Avante, Diffview, Trouble, Telescope, help and quickfix all close with a single `q`.
-
-### Markdown (yes, it gets its own section)
-
-Because nobody should have to push to GitHub just to see how a README looks.
-
-- `render-markdown.nvim` renders headings, tables, checkboxes and code blocks inside the buffer.
-- `markdown-preview.nvim` opens a GitHub-style live preview in your browser, with Mermaid and KaTeX.
-- `marksman` LSP, `prettier` formatting and `markdownlint-cli2` linting.
-
----
-
-## 🌍 Languages
-
-LSP, formatting and debugging are set up for the following (some need their toolchain, which `--full` installs):
-
-| Category            | Languages                                                |
-| ------------------- | -------------------------------------------------------- |
-| Web / Frontend      | HTML, CSS, JavaScript, TypeScript, PHP, Emmet            |
-| Systems / Low level | C, C++, Rust, Go, C#, Java, Assembly                     |
-| Scripting           | Python, Bash, PowerShell, Ruby                           |
-| Mobile              | Kotlin, Swift, Dart                                      |
-| Data                | SQL (MySQL, PostgreSQL, SQLite, MSSQL), JSON, YAML, TOML |
-| Docs                | Markdown, LaTeX (`vimtex` + `texlab`)                    |
-| Other               | Lua, Nim, Scala                                          |
-
-Some servers in the list (`dartls`, `julials`, `metals`, `perlnavigator`) are not in Mason and need their own SDK. Neovim simply ignores them until you install them.
-
----
-
-## ⌨️ Key bindings
-
-`<leader>` is `Space`. Press it and wait: `which-key` shows the rest.
-
-### Everyday
-
-| Key                    | Action                                                       |
-| ---------------------- | ------------------------------------------------------------ |
-| `-`                    | Oil: open the parent directory as a buffer                   |
-| `<leader>ha` / `<C-e>` | Harpoon: add file / open menu                                |
-| `<leader>1` ... `4`    | Harpoon: jump to file 1 to 4                                 |
-| `<leader>gg`           | Lazygit                                                      |
-| `<leader>S`            | grug-far: search and replace in the project                  |
-| `<leader>sw`           | grug-far: replace the word under the cursor                  |
-| `<leader>J`            | treesj: split or join the block under the cursor             |
-| `<leader>cp`           | Color picker (ccc)                                           |
-| `q`                    | Close auxiliary windows (tree, aerial, avante, trouble, ...) |
-
-### Markdown
-
-| Key          | Action                     |
-| ------------ | -------------------------- |
-| `<leader>mr` | Toggle in-buffer rendering |
-| `<leader>mp` | Toggle browser preview     |
-
-### LSP
-
-| Key          | Action              |
-| ------------ | ------------------- |
-| `gd`         | Go to definition    |
-| `K`          | Hover documentation |
-| `<leader>ca` | Code actions        |
-| `<leader>rn` | Rename symbol       |
-
-### Debugger
-
-| Key                   | Action                 |
-| --------------------- | ---------------------- |
-| `F5`                  | Start / continue       |
-| `F9`                  | Toggle breakpoint      |
-| `F10` / `F11` / `F12` | Step over / into / out |
-| `Shift+F5`            | Stop                   |
-| `<leader>B`           | Conditional breakpoint |
-| `<leader>du`          | Toggle debugger UI     |
-
-### Extras
-
-| Key          | Action                         |
-| ------------ | ------------------------------ |
-| `<leader>sr` | Sniprun: run line or selection |
-| `<leader>ro` | Iron: open a REPL              |
-| `<leader>db` | Dadbod UI                      |
-| `<C-g>`      | Codeium: accept suggestion     |
-
----
-
-## 🗂️ Structure
+## Architecture
 
 ```text
 ~/.config/nvim
-├── init.lua                  # lazy.nvim bootstrap + options
-├── bootstrap.sh              # one-command setup for Arch
-├── lazy-lock.json            # pinned plugin versions
-├── markdownlint-cli2.yaml    # linked to ~/.markdownlint-cli2.yaml
-├── after/ftplugin/           # per-filetype settings (markdown, ...)
-├── assets/                   # screenshots used in this README
+├── init.lua                  # lazy.nvim bootstrap, DAP signs, module loading
+├── bootstrap.sh              # Arch Linux setup (core and --full modes)
+├── lazy-lock.json            # pinned plugin revisions
+├── AGENTS.md                 # engineering rules for this repository
+├── after/ftplugin/           # filetype-specific settings
+├── ftplugin/                 # per-language overrides
+├── assets/                   # screenshots used by this README
+├── tests/
+│   └── dashboard_spec.lua    # headless dashboard checks
 └── lua/
-    ├── chadrc.lua            # NvChad theme + highlight overrides
-    ├── mappings.lua
-    ├── options.lua
-    ├── autocmds.lua
-    ├── configs/              # blink, conform, lint, lspconfig, dap, ...
-    └── plugins/              # init.lua, extras.lua, markdown.lua
+    ├── chadrc.lua            # NvChad theme, statusline, winbar and highlights
+    ├── mappings.lua          # global keymaps
+    ├── options.lua           # editor options and diagnostics
+    ├── autocmds.lua          # autocommands and integrations
+    ├── configs/              # blink, conform, lint, LSP, DAP, panels, SQL, Hurl
+    ├── dashboard/            # config, data, navigation, renderer and sessions
+    ├── plugins/              # lazy.nvim specs (init, extras, markdown, api)
+    └── themes/               # custom base46 themes
 ```
 
----
+## Capabilities
 
-## 🧯 Troubleshooting
+### Editing and navigation
 
-| Symptom                                      | Fix                                                                    |
-| -------------------------------------------- | ---------------------------------------------------------------------- |
-| Icons look like boxes                        | Set your terminal font to a Nerd Font                                  |
-| `node: error while loading shared libraries` | You did a partial upgrade. Run `sudo pacman -Syu`                      |
-| Avante errors on startup                     | `:Lazy build avante.nvim` (needs `cargo`)                              |
-| Markdown preview does not open               | `cd ~/.local/share/nvim/lazy/markdown-preview.nvim/app && npm install` |
-| `:DiffviewOpen` says "Not a repo"            | It only works inside a git repository, as one would hope               |
+- Telescope with `fzf-native` for files, buffers, symbols, recent files and TODOs.
+- Oil for directory editing, Harpoon for fast file switching, nvim-tree for a file tree.
+- Treesitter syntax highlighting, text objects, folding through nvim-ufo and sticky
+  context.
+- Surround, autotag, multicursor, commenting, refactoring and structured split/join with
+  treesj.
+- Search and replace across a project with grug-far.
 
-Run `:checkhealth` and `:Lazy` first. They know things.
+### Completion
 
----
+`blink.cmp` provides LSP, path, snippet and buffer completion, with custom sources for
+CSS selectors, HTML values, Dadbod and SQL administration. `<Tab>` selects the next item
+when the menu is open and jumps over closing delimiters otherwise; `<CR>` always inserts a
+newline.
 
-## 🛣️ Roadmap
+### LSP, formatting and linting
 
-- [ ] Verify the bootstrap on a clean Arch install
-- [ ] Support for other distributions (after the Arch one is boringly stable)
-- [ ] Neovim `-V1` startup time benchmarks in this README
+- Native Neovim LSP setup through `vim.lsp.config` and `vim.lsp.enable`.
+- `conform.nvim` formats on save with per-filetype formatter chains.
+- `nvim-lint` runs SQLFluff with dialect awareness, Stylelint and markdownlint-cli2.
+- Mason manages language servers and external tools; `mason-nvim-dap` installs debug
+  adapters.
 
----
+### Dashboard
 
-## 🤝 Contributing
+The dashboard is a self-contained module, not a wrapper around a third-party start screen.
+It provides:
 
-Issues and PRs are welcome, as long as they keep the philosophy: **justified plugins, fast startup, no bloat.**
-If your PR adds a plugin, explain which problem it solves that the current setup does not.
+- global recent files and recent directories;
+- a project manager with pinned projects and per-project sessions;
+- session save/restore, including splits and layout;
+- file, grep, buffer and TODO launchers;
+- Git branch, working-tree status and last commit;
+- LSP diagnostic summary per project;
+- `hjkl` and arrow-key navigation, number shortcuts for projects, and `?` for help.
 
----
+The renderer is display-width aware and highlights interactive rows directly, without
+byte-offset assumptions for multibyte icons.
 
-## 📜 License
+### Git, debugging and data tools
 
-GPL-3.0. Free as in freedom, free as in "please do not ask me to fix your `init.lua` on a Friday."
+- Gitsigns, Diffview and Lazygit.
+- nvim-dap with a UI, virtual text, Python and C/C++/Rust adapters, and standard IDE keys.
+- Dadbod and `sqls.nvim` for MySQL, MariaDB, PostgreSQL and SQLite workflows.
+- Hurl for executable HTTP requests and assertions in `.hurl` files, with buffer-local
+  `<leader>H*` mappings.
+- Sniprun and Iron for running code and opening REPLs without leaving the editor.
 
-<div align="center">
+### Markdown
 
-_I use Arch, btw._ 🐧
+`render-markdown.nvim` renders headings, tables, checkboxes and code blocks in the buffer;
+`markdown-preview.nvim` opens a browser preview with Mermaid and KaTeX. Marksman, Prettier
+and markdownlint-cli2 complete the toolchain.
 
-</div>
+## Languages
+
+The configuration includes LSP, formatting and debugging support for:
+
+| Area | Languages |
+| --- | --- |
+| Web | HTML, CSS, JavaScript, TypeScript, React/JSX, Vue, Svelte, PHP, Emmet |
+| Systems | C, C++, Rust, Go, Zig, C#, Java, Kotlin, Swift, Dart, Assembly |
+| Scripting | Python, Bash, Zsh, Ruby, Lua, PowerShell |
+| Data | SQL (MySQL, MariaDB, PostgreSQL, SQLite, MSSQL), JSON, YAML, TOML, XML, CSV |
+| Documents | Markdown, LaTeX |
+| Other | Elixir, Haskell, Nim, Scala |
+
+Language servers that require an external SDK are enabled only when their executable is
+available; otherwise Neovim skips them cleanly.
+
+## Key bindings
+
+`<leader>` is `Space`. `which-key` lists the complete map.
+
+### General
+
+| Key | Action |
+| --- | --- |
+| `;` | Enter command-line mode |
+| `-` | Open the parent directory with Oil |
+| `<C-s>` | Save the current file |
+| `<C-q>` | Close the current window |
+| `<Tab>` / `<S-Tab>` | Next / previous buffer |
+| `q` | Close auxiliary panels (Trouble, Aerial, Avante, Diffview, …) |
+
+### Files and search
+
+| Key | Action |
+| --- | --- |
+| `<leader>b` | Pick an open buffer |
+| `<leader>ha` / `<leader>hm` | Harpoon: add file / open menu |
+| `<leader>1`–`<leader>4` | Jump to a Harpoon file |
+| `<leader>S` | Search and replace with grug-far |
+| `<leader>sw` | Replace the word under the cursor |
+| `<leader>ft` | Search TODO/FIXME comments |
+| `<leader>gg` | Open Lazygit |
+
+### LSP and diagnostics
+
+| Key | Action |
+| --- | --- |
+| `gd` / `gD` | Go to definition / declaration |
+| `gR` / `gi` | References / implementation |
+| `K` | Hover documentation |
+| `<leader>ca` | Code actions |
+| `<leader>rn` | Rename symbol |
+| `<leader>lf` | Format buffer through LSP |
+| `[d` / `]d` | Previous / next diagnostic |
+| `<leader>tt` | Toggle diagnostics in Trouble |
+| `<leader>ts` | Toggle document symbols |
+
+### Debugging
+
+| Key | Action |
+| --- | --- |
+| `F5` | Start or continue |
+| `F9` | Toggle breakpoint |
+| `F10` / `F11` / `F12` | Step over / into / out |
+| `Shift+F5` | Stop |
+| `<leader>B` | Conditional breakpoint |
+| `<leader>du` | Toggle debugger UI |
+
+## Themes
+
+The active theme is configured in `lua/chadrc.lua`. Custom themes under `lua/themes/`
+include:
+
+- `fluorodark` — neon fluoromachine palette with strong contrast;
+- `crt_hardcore` — pure black background and maximum-saturation ANSI colors;
+- `sakura_dracula` — pastel accents over a Dracula background;
+- `cyberkali`, `cybermax`, `cyberneon`, `hacker`, `hellokitty`, `mrrobot`,
+  `retromrobot`, `ultraneo`, `vscode_monokai` and `vscodeoscuro`.
+
+Theme changes also update completion menus, rainbow delimiters, cursorline and dashboard
+highlights.
+
+## Validation
+
+Run the headless dashboard suite:
+
+```bash
+nvim --headless -u init.lua -c "luafile tests/dashboard_spec.lua"
+```
+
+The suite checks layout centering, listchars handling, sessions and Trouble integration.
+For a general health check:
+
+```bash
+nvim --headless "+checkhealth" +qa
+```
+
+## Troubleshooting
+
+| Symptom | Resolution |
+| --- | --- |
+| Icons appear as boxes | Set the terminal font to a Nerd Font |
+| `node` fails after a partial upgrade | Run `sudo pacman -Syu` |
+| Avante reports a missing module | Run `:Lazy build avante.nvim`; ensure `mega.cmdparse` is installed |
+| Markdown preview does not open | `cd ~/.local/share/nvim/lazy/markdown-preview.nvim/app && npm install` |
+| A language server is missing | Open `:Mason`, install it, then restart Neovim |
+| Formatter or linter not found | Install the executable through Mason or `pacman` |
+
+Use `:checkhealth`, `:Lazy` and `:Mason` to inspect the current state.
+
+## Contributing
+
+Changes should preserve existing behavior, keep the diff focused, and justify any new
+plugin. Run the dashboard suite and `stylua --check` before opening a pull request.
+
+## License
+
+Released into the public domain under the Unlicense. See [LICENSE](LICENSE).
