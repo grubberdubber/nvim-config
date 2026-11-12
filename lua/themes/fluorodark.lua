@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- FLUORODARK — Fork de Fluoromachine (Luminancia Ecualizada)
+-- FLUORODARK — Fluoromachine fork (equalized luminance)
 -- ═══════════════════════════════════════════════════════════════
 
 local M = {}
@@ -8,41 +8,41 @@ local TRANSPARENT = true
 
 -- ═══ PALETA PRINCIPAL ═════════════════════════════════════════════
 M.base_30 = {
-    white = "#FFFFFF", -- Texto base y puntuación
-    darker_black = "#020104", -- Paneles más oscuros
+    white = "#FFFFFF", -- Base text and punctuation
+    darker_black = "#020104", -- Darker panels
     black = "#050308", -- Fondo principal (SIN CAMBIOS)
-    black2 = "#0A0612", -- Línea de cursor
+    black2 = "#0A0612", -- Cursor line
     one_bg = "#0D0817", -- Statusline
     one_bg2 = "#140C24", -- Tabs inactivas
     one_bg3 = "#1C1133", -- Bordes
 
-    -- ── COMENTARIOS Y LÍNEAS (INTACTOS) ──
+    -- ── COMMENTS AND LINE NUMBERS (UNCHANGED) ──
     grey = "#00AABB",
     grey_fg = "#0088cc", -- Comentarios suave
     grey_fg2 = "#00CCFF",
-    light_grey = "#FF007F", -- Números de línea en Rosa Neón
+    light_grey = "#FF007F", -- Line numbers in neon pink
 
     -- ── SINTAXIS FLUOROMACHINE (MISMO NIVEL DE BRILLO RGB) ──
-    red = "#FF0055", -- Rojo Láser (Brillo Ecualizado)
-    baby_pink = "#FF00AA", -- Rosa Neón Puro
+    red = "#FF0055", -- Laser red (balanced brightness)
+    baby_pink = "#FF00AA", -- Pure neon pink
     pink = "#FF00FF", -- Magenta Puro (100% Brillo)
     line = "#0A0612",
-    green = "#00FF00", -- Verde Ácido Puro (100% Brillo)
+    green = "#00FF00", -- Pure acid green (100% brightness)
     vibrant_green = "#00FF00",
     nord_blue = "#00FFFF",
-    blue = "#00FFFF", -- Cyan Neón Puro (100% Brillo)
+    blue = "#00FFFF", -- Neon cyan Puro (100% Brillo)
     yellow = "#FFFF00", -- Amarillo Puro (100% Brillo)
     sun = "#FFFF00",
     purple = "#AA00FF", -- Morado Fluor (Elevado al 100% de brillo)
     dark_purple = "#8800CC",
-    teal = "#00FFAA", -- Menta/Aqua Neón
-    orange = "#FF8000", -- Naranja Neón (Ecualizado con el Amarillo y Magenta)
+    teal = "#00FFAA", -- Neon mint/aqua
+    orange = "#FF8000", -- Neon orange (Ecualizado con el Amarillo y Magenta)
     cyan = "#00FFFF",
 
     -- ── INTERFAZ ──
     statusline_bg = "#020104",
     lightbg = "#0D0817",
-    pmenu_bg = "#FF00FF", -- Menús flotantes en Magenta
+    pmenu_bg = "#FF00FF", -- Floating menus in magenta
     folder_bg = "#FFFF00", -- Carpetas a juego con Amarillo
 }
 
@@ -59,7 +59,7 @@ M.base_16 = {
     base08 = "#FFFF00", -- Variables (Amarillo Puro 100% Brillo)
     base09 = "#FF8000", -- Naranja (Ecualizado)
     base0A = "#00FFAA", -- Menta
-    base0B = "#00FF00", -- Verde Ácido (100% Brillo)
+    base0B = "#00FF00", -- Acid green (100% brightness)
     base0C = "#00FFFF", -- Cyan
     base0D = "#00FFFF", -- Funciones (Cyan)
     base0E = "#FF00FF", -- Keywords (Magenta)
