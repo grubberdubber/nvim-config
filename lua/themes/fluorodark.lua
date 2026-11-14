@@ -84,8 +84,33 @@ M.hl_add = {
     ["@method.call"] = { fg = M.base_16.base0D, bold = true },
     ["@property"] = { fg = M.base_30.baby_pink },
 
+    -- ── SEARCH SURFACES ──
+    -- Search is a muted surface; the active match keeps the neon accent.
+    -- #14463A is the requested dark green surface (not a syntax color).
+    ["Search"] = { bg = "#14463A", fg = M.base_30.white },
+    ["CurSearch"] = { bg = M.base_30.teal, fg = M.base_30.black, bold = true },
+    ["IncSearch"] = { bg = M.base_30.teal, fg = M.base_30.black, bold = true },
+
+    -- ── INVISIBLE CHARACTERS ──
+    -- #3A3F5C is deliberately below body-text contrast: it marks spaces
+    -- without competing with the code.
+    ["Whitespace"] = { fg = "#3A3F5C" },
+
     ["MatchParen"] = { bg = "#16304F", fg = M.base_30.white, bold = true },
     ["MatchWord"] = { bg = "#16304F", fg = M.base_30.white, bold = true },
+}
+
+M.polish_hl = {
+    defaults = {
+        Search = { bg = "#14463A", fg = M.base_30.white },
+        CurSearch = { bg = M.base_30.teal, fg = M.base_30.black, bold = true },
+        IncSearch = { bg = M.base_30.teal, fg = M.base_30.black, bold = true },
+        Whitespace = { fg = "#3A3F5C" },
+        -- Search and CurSearch keep their own backgrounds. A light Visual
+        -- foreground keeps the remainder of the match readable where the
+        -- Visual background wins over the search surface.
+        Visual = { bg = "#16304F", fg = M.base_30.white },
+    },
 }
 
 M = require("base46").override_theme(M, "fluorodark")

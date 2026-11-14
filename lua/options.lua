@@ -1,5 +1,6 @@
--- ── DISABLE CODEIUM DEFAULT KEYBINDINGS BEFORE IT LOADS ──────────
-vim.g.codeium_disable_bindings = 1
+-- ── WINDSURF OWNS ITS VIRTUAL-TEXT KEYBINDINGS ──────────────────
+-- The plugin maps <C-g>/<C-]> in the spec; no legacy Codeium Vim mappings
+-- are needed here.
 
 require "nvchad.options"
 
@@ -17,8 +18,22 @@ o.cursorlineopt = "both"
 local function apply_custom_colors()
     -- Base UI
     vim.api.nvim_set_hl(0, "Comment", { fg = "#6272a4", italic = true, bold = false })
-    vim.api.nvim_set_hl(0, "Whitespace", { fg = "#4b5263" })
     vim.api.nvim_set_hl(0, "NonText", { fg = "#4b5263" })
+
+    -- Split boundaries are structural, not a third statusline. Keep their
+    -- glyph but use the editor background so a new terminal/DAP/Aerial window
+    -- does not paint a full-width statusline strip between panes.
+    local normal = vim.api.nvim_get_hl(0, { name = "Normal", link = false })
+    local separator = vim.api.nvim_get_hl(0, { name = "WinSeparator", link = false })
+    vim.api.nvim_set_hl(0, "WinSeparator", { fg = separator.fg, bg = normal.bg })
+    vim.api.nvim_set_hl(0, "StatusLineNC", { fg = normal.fg, bg = normal.bg })
+    -- The one-row separator above a scrolled message is linked to StatusLine
+    -- by default and looked like an empty dark bar over the swap dialog.
+    -- It must be applied eagerly, before the first message is displayed.
+    vim.api.nvim_set_hl(0, "MsgSeparator", { fg = normal.bg, bg = normal.bg })
+    -- Avante's visual-selection hint is UI text, not a keyword. Link it to the
+    -- muted comment color so it no longer flashes magenta over a selection.
+    vim.api.nvim_set_hl(0, "AvanteInlineHint", { link = "Comment", force = true })
 
     -- Diagnostic palette
     local err = "#ff7a93"
@@ -81,6 +96,16 @@ opt.listchars = {
     nbsp = "␣",
 }
 
+-- Horizontal splits draw their separator with fillchars.horiz. Keep the
+-- thin divider so a terminal or any other horizontal split is visually
+-- bounded like a vertical split, but use a glyph with an empty background:
+-- this is a separator, not a statusline. `WinSeparator` is themed above
+-- with the editor background, so no full-width bar is painted.
+local fillchars = vim.opt.fillchars:get()
+fillchars.horiz = "─"
+fillchars.vert = "│"
+vim.opt.fillchars = fillchars
+
 -- ── DIAGNOSTICS (no gutter icons, counts live in the statusline) ──
 vim.diagnostic.config {
     virtual_text = { prefix = "● ", spacing = 4 },
@@ -104,6 +129,8 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
 -- ── UI AND MISC ──────────────────────────────────────────────────
 o.ignorecase = true
 o.smartcase = true
+-- Search count is rendered in the bottom HUD, not by the native message row.
+opt.shortmess:append "S"
 o.scrolloff = 8
 o.signcolumn = "auto:2"
 o.updatetime = 250
@@ -113,4 +140,10 @@ o.splitright = true
 opt.clipboard = ""
 o.undofile = true
 opt.fileformats = { "unix", "dos" }
-opt.cmdheight = 1 -- Keep one row for the command line instead of hiding it
+opt.cmdheight = 1 -- The command-line row also hosts the bottom search/selection HUD
+-- One global statusline at the bottom. Some plugins temporarily change this
+-- to 2, which paints an extra bar inside every DAP panel; DAP re-asserts it
+-- in configs/dap.lua as well.
+o.laststatus = 3
+opt.showcmd = true
+opt.showcmdloc = "last" -- Pending commands stay below the statusline, never inside it

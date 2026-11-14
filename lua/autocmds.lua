@@ -137,23 +137,56 @@ vim.api.nvim_create_autocmd("VimEnter", {
 })
 
 -- ── SUBTLE CURSOR LINE (VS Code style) ───────────────────────────
--- Highlight the cursor line in Normal mode only; it disappears in Insert so
--- it does not distract while typing. Same pattern as the hybrid numbering.
+-- Only the focused window paints the cursor line, and it disappears in Insert
+-- so it does not distract while typing. `cursorline` is window-local but
+-- inherits the global value; setting it only on BufEnter left every split and
+-- every DAP panel highlighted at once. Assign it explicitly on focus changes.
 vim.opt.cursorline = true
 
 local cursorline_group = vim.api.nvim_create_augroup("CursorlineNormalOnly", { clear = true })
+
+local function supports_cursorline(win)
+    local buf = vim.api.nvim_win_get_buf(win)
+    -- The dashboard draws its own row highlight.
+    return vim.bo[buf].filetype ~= "dashboard"
+end
+
+---@param enabled boolean|nil nil means "on unless in Insert mode"
+local function refresh_cursorline(enabled)
+    local current = vim.api.nvim_get_current_win()
+    if enabled == nil then
+        enabled = vim.api.nvim_get_mode().mode:sub(1, 1) ~= "i"
+    end
+
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        local active = win == current and enabled and supports_cursorline(win)
+        vim.api.nvim_set_option_value("cursorline", active, { win = win })
+    end
+end
+
 vim.api.nvim_create_autocmd("InsertEnter", {
     group = cursorline_group,
     callback = function()
-        vim.opt_local.cursorline = false
+        -- Only the window being typed in loses the highlight. DAP UI can enter
+        -- Insert in its REPL while another window remains focused; clearing
+        -- every window there left the focused source with no cursorline.
+        vim.api.nvim_set_option_value("cursorline", false, { win = vim.api.nvim_get_current_win() })
     end,
 })
-vim.api.nvim_create_autocmd({ "InsertLeave", "BufEnter", "FocusGained" }, {
-    group = cursorline_group,
-    callback = function()
-        vim.opt_local.cursorline = true
-    end,
-})
+
+vim.api.nvim_create_autocmd(
+    { "InsertLeave", "WinEnter", "BufEnter", "BufWinEnter", "FileType", "TabEnter", "FocusGained", "VimEnter" },
+    {
+        group = cursorline_group,
+        callback = function()
+            -- DAP UI creates its whole layout in one synchronous pass; scheduling
+            -- refreshes after that pass sets the final focused window correctly.
+            vim.schedule(function()
+                refresh_cursorline()
+            end)
+        end,
+    }
+)
 
 -- ── CURSORLINE CONTRAST FIX (the theme color was invisible) ─────
 vim.api.nvim_create_autocmd("VimEnter", {
@@ -200,42 +233,6 @@ vim.api.nvim_create_autocmd("VimEnter", {
     end,
 })
 
--- ── AVANTE: AUTOMATIC GEMINI MODEL FALLBACK ON QUOTA ERRORS ─────
--- Cascade: 3.1 Pro -> 3.8 Flash -> 3.7 Flash -> 3.6 Flash -> Flash-Lite.
--- A quota/rate-limit error demotes to the next model automatically.
-local avante_cascade = { "gemini", "gemini_flash38", "gemini_flash37", "gemini_flash36", "gemini_flash_lite" }
-local avante_cascade_labels = {
-    gemini = "Gemini 3.1 Pro",
-    gemini_flash38 = "Gemini 3.8 Flash",
-    gemini_flash37 = "Gemini 3.7 Flash",
-    gemini_flash36 = "Gemini 3.6 Flash",
-    gemini_flash_lite = "Gemini 3.5 Flash-Lite",
-}
-_G.AvanteCascadeIndex = 1
-
-local orig_notify_avante = vim.notify
-vim.notify = function(msg, level, opts)
-    if
-        type(msg) == "string"
-        and (msg:find "rate.?limit" or msg:find "quota" or msg:find "429" or msg:find "RESOURCE_EXHAUSTED")
-    then
-        if _G.AvanteCascadeIndex < #avante_cascade then
-            _G.AvanteCascadeIndex = _G.AvanteCascadeIndex + 1
-            local next_provider = avante_cascade[_G.AvanteCascadeIndex]
-            vim.schedule(function()
-                pcall(vim.cmd, "AvanteSwitchProvider " .. next_provider)
-                orig_notify_avante(
-                    "Avante: quota exhausted, falling back to " .. avante_cascade_labels[next_provider],
-                    vim.log.levels.WARN
-                )
-            end)
-        else
-            orig_notify_avante("Avante: all Gemini models are out of quota for now", vim.log.levels.ERROR)
-        end
-    end
-    orig_notify_avante(msg, level, opts)
-end
-
 -- ── SMART ENTER AND INDENTATION IN HTML/XML (VS Code style) ──────
 
 local function smart_html_enter()
@@ -252,7 +249,7 @@ local function smart_html_enter()
         local inner_indent = indent .. string.rep(" ", sw)
 
         local clean_before = before:gsub("%s+$", "")
-        clean_after = after:gsub("^%s+", "")
+        local clean_after = after:gsub("^%s+", "")
 
         vim.api.nvim_set_current_line(clean_before)
         vim.api.nvim_buf_set_lines(0, row, row, false, { inner_indent, indent .. clean_after })
@@ -479,6 +476,15 @@ vim.api.nvim_create_autocmd("FileType", {
                 rhs = function()
                     require("telescope.actions").close(buf)
                 end
+                -- Telescope maps <C-q> in both prompt modes to "send to
+                -- quickfix + open quickfix", so closing the picker left a
+                -- stray quickfix window behind. Closing must win here.
+                vim.keymap.set({ "i", "n" }, "<C-q>", rhs, {
+                    buffer = buf,
+                    nowait = true,
+                    silent = true,
+                    desc = "Close window",
+                })
             elseif close_cmds[ft] then
                 rhs = function()
                     pcall(vim.cmd, close_cmds[ft])
@@ -494,3 +500,7 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 require("configs.tag_errors").setup()
+require("configs.emoji").setup()
+require("configs.status_hud").setup()
+require("configs.search_clear").setup()
+require("configs.terminal_statusline").setup()

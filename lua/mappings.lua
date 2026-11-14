@@ -3,14 +3,10 @@ require "nvchad.mappings"
 
 local map = vim.keymap.set
 
--- ── AI COMPLETION (CODEIUM, CTRL+G ONLY) ─────────────────────────
-vim.api.nvim_set_hl(0, "CodeiumSuggestion", { fg = "#5c6370", italic = true })
-map("i", "<C-g>", function()
-    return vim.fn["codeium#Accept"]()
-end, { expr = true, silent = true, desc = "Codeium: accept suggestion" })
-map("i", "<C-]>", function()
-    return vim.fn["codeium#Clear"]()
-end, { expr = true, silent = true, desc = "Codeium: clear suggestion" })
+-- ── AI COMPLETION (WINDSURF, CTRL+G ONLY) ───────────────────────
+-- Link instead of a hardcoded dark hex: the suggestion stays readable when
+-- the theme changes. The plugin spec installs <C-g>/<C-]>.
+vim.api.nvim_set_hl(0, "CodeiumSuggestion", { link = "Comment", force = true })
 
 -- ── CORE ─────────────────────────────────────────────────────────
 map("n", ";", ":", { desc = "Command: enter command-line mode" })
@@ -321,11 +317,7 @@ end, { desc = "Resize: border down" })
 -- ── TERMINAL IN THE MISSING DIRECTIONS ───────────────────────────
 -- <A-h> bottom, <A-v> right and <A-i> float come from NvChad and stay as-is.
 local function git_cwd()
-    local git_dir = vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")[1]
-    if vim.v.shell_error == 0 and git_dir then
-        return git_dir
-    end
-    return vim.fn.getcwd()
+    return vim.fs.root(vim.fn.expand "%:p:h", { ".git" }) or vim.fn.getcwd()
 end
 
 map({ "n", "t" }, "<A-j>", function()
@@ -355,13 +347,16 @@ local function get_breadcrumb_items()
         return {}
     end
 
-    local git_root_list = vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")
-    local root = (vim.v.shell_error == 0 and git_root_list[1] and git_root_list[1] ~= "" and git_root_list[1])
-        or vim.fn.getcwd()
+    local dir = vim.fn.expand "%:p:h"
+    local root = vim.fs.root(dir, { ".git" }) or vim.fn.getcwd()
+    local prefix = root == "/" and "/" or (root .. "/")
 
-    local rel = full_path
-    if full_path:sub(1, #root) == root then
-        rel = full_path:sub(#root + 2)
+    local rel
+    if full_path:sub(1, #prefix) == prefix then
+        rel = full_path:sub(#prefix + 1)
+    else
+        root = dir
+        rel = vim.fn.expand "%:t"
     end
 
     local items = { { label = vim.fn.fnamemodify(root, ":t"), path = root, is_dir = true } }
@@ -522,32 +517,12 @@ map("n", "<leader>lc", "<cmd>VimtexClean<CR>", { desc = "LaTeX: clean auxiliarie
 
 -- ── AVANTE (AI ASSISTANT) ────────────────────────────────────────
 map("n", "<leader>ag", function()
-    local models = {
-        { label = "Gemini 3.1 Pro (highest capability)", provider = "gemini", idx = 1 },
-        { label = "Gemini 3.8 Flash", provider = "gemini_flash38", idx = 2 },
-        { label = "Gemini 3.7 Flash", provider = "gemini_flash37", idx = 3 },
-        { label = "Gemini 3.6 Flash", provider = "gemini_flash36", idx = 4 },
-        { label = "Gemini 3.5 Flash-Lite (fastest / cheapest)", provider = "gemini_flash_lite", idx = 5 },
-    }
-    vim.ui.select(models, {
-        prompt = "Switch Avante model:",
-        format_item = function(item)
-            return item.label
-        end,
-    }, function(choice)
-        if choice then
-            require("avante.api").switch_provider(choice.provider)
-            _G.AvanteCascadeIndex = choice.idx
-            vim.notify("Avante: using " .. choice.label, vim.log.levels.INFO)
-        end
-    end)
-end, { desc = "Avante: select Gemini model" })
+    require("configs.avante").select_model()
+end, { desc = "Avante: select NVIDIA/OpenRouter model" })
 
 map("n", "<leader>aR", function()
-    require("avante.api").switch_provider "gemini"
-    _G.AvanteCascadeIndex = 1
-    vim.notify("Avante: reset to Gemini 3.1 Pro", vim.log.levels.INFO)
-end, { desc = "Avante: reset to default model" })
+    require("configs.avante").reset()
+end, { desc = "Avante: reset to default NVIDIA model" })
 
 -- ── UI TOGGLES (<leader>u, same convention as LazyVim) ───────────
 map("n", "<leader>us", "<cmd>set spell!<CR>", { desc = "UI: toggle spell checker" })
@@ -564,6 +539,15 @@ map("n", "<leader>ul", function()
     vim.wo.list = not vim.wo.list
     vim.notify("listchars: " .. (vim.wo.list and "on" or "off"), vim.log.levels.INFO)
 end, { desc = "UI: toggle listchars (indent dots)" })
+map("n", "<leader>ui", function()
+    vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled(), { bufnr = 0 })
+end, { desc = "UI: toggle LSP inlay hints" })
+map("n", "<leader>uC", function()
+    vim.lsp.codelens.enable(not vim.lsp.codelens.is_enabled { bufnr = 0 }, { bufnr = 0 })
+end, { desc = "UI: toggle LSP code lens" })
+map("n", "<leader>uh", function()
+    vim.lsp.enable("harper_ls", not vim.lsp.is_enabled "harper_ls")
+end, { desc = "UI: toggle Harper grammar checker" })
 
 -- ── SESSIONS (persistence.nvim) ──────────────────────────────────
 map("n", "<leader>Ps", function()
