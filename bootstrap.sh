@@ -95,6 +95,10 @@ local packages = {
   "lua-language-server", "marksman", "nimlangserver", "omnisharp",
   "powershell-editor-services", "pyright", "rust-analyzer", "solargraph",
   "sqlls", "sqls", "texlab", "typescript-language-server",
+  -- Additional LSPs and linters (explicit, reproducible install)
+  "harper-ls", "zls", "elixir-ls", "vue-language-server",
+  "yaml-language-server", "json-lsp",
+  "ruff", "shellcheck", "hadolint", "yamllint",
   -- Formatters y linters
   "black", "clang-format", "google-java-format", "ktlint", "markdownlint-cli2",
   "php-cs-fixer", "prettier", "rubyfmt", "shfmt", "sql-formatter", "sqlfluff",

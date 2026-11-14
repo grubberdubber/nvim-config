@@ -1,6 +1,11 @@
 local lint = require "lint"
 
 lint.linters_by_ft = {
+    python = { "ruff" },
+    bash = { "shellcheck" },
+    sh = { "shellcheck" },
+    dockerfile = { "hadolint" },
+    yaml = { "yamllint" },
     sql = { "sqlfluff" },
     mysql = { "sqlfluff" },
     css = { "stylelint" },

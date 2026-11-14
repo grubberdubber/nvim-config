@@ -8,6 +8,7 @@ local plugins = {
         version = "1.*",
         dependencies = {
             "rafamadriz/friendly-snippets",
+            "moyiz/blink-emoji.nvim",
             {
                 "saghen/blink.compat",
                 version = "*",
@@ -236,6 +237,16 @@ local plugins = {
                 "tailwindcss-language-server",
                 "eslint-lsp",
                 "svelte-language-server",
+                "harper-ls",
+                "zls",
+                "elixir-ls",
+                "vue-language-server",
+                "yaml-language-server",
+                "json-lsp",
+                "ruff",
+                "shellcheck",
+                "hadolint",
+                "yamllint",
             }
             local ok, mr = pcall(require, "mason-registry")
             if not ok then
@@ -277,10 +288,17 @@ local plugins = {
                 "nim_langserver",
                 "jdtls",
                 "texlab",
+                "zls",
+                "elixirls",
+                "vue_ls",
+                "yamlls",
+                "jsonls",
+                "harper_ls",
             },
             automatic_installation = false,
             automatic_enable = {
-                exclude = { "jdtls" },
+                -- rustaceanvim and flutter-tools own these two clients.
+                exclude = { "jdtls", "rust_analyzer", "dartls" },
             },
         },
     },
@@ -363,6 +381,18 @@ local plugins = {
                     "hcl",
                     "gitignore",
                     "git_config",
+                    "tsx",
+                    "vue",
+                    "svelte",
+                    "zig",
+                    "haskell",
+                    "elixir",
+                    "swift",
+                    "xml",
+                    "diff",
+                    "regex",
+                    "csv",
+                    "hurl",
                 },
                 highlight = { enable = true },
                 indent = { enable = true },
@@ -447,17 +477,33 @@ local plugins = {
         ft = { "html", "css", "javascript", "typescript", "php" },
     },
 
+    -- ── WINDSURF (inline AI suggestions) ────────────────────────────
+    -- Pin the fix for the nil chunk emitted by the language server. The
+    -- upstream main branch still has the crash; this commit adds the nil
+    -- check while keeping the same Codeium/Windsurf server and auth.
     {
-        "Exafunction/codeium.vim",
-        event = "BufRead",
+        "Exafunction/windsurf.nvim",
+        commit = "46fe7689aec11cb8ac602a96d27f9441a97e168d",
+        event = { "BufReadPost", "BufNewFile" },
+        dependencies = { "nvim-lua/plenary.nvim" },
         config = function()
-            vim.keymap.set("i", "<C-g>", function()
-                return vim.fn["codeium#Accept"]()
-            end, { expr = true, silent = true })
-
-            vim.keymap.set("i", "<C-]>", function()
-                return vim.fn["codeium#Clear"]()
-            end, { expr = true, silent = true })
+            require("codeium").setup {
+                config_path = vim.fn.expand "~/.codeium/config.json",
+                bin_path = vim.fn.expand "~/.codeium/bin",
+                enable_cmp_source = false,
+                virtual_text = {
+                    enabled = true,
+                    map_keys = true,
+                    idle_delay = 75,
+                    accept_fallback = "",
+                    key_bindings = {
+                        accept = "<C-g>",
+                        clear = "<C-]>",
+                        next = "<M-]>",
+                        prev = "<M-[>",
+                    },
+                },
+            }
         end,
     },
 
@@ -611,13 +657,6 @@ local plugins = {
             vim.o.foldlevelstart = 99
             vim.o.foldenable = true
         end,
-    },
-
-    -- ── REST CLIENT (exercise APIs without leaving the editor) ─────
-    {
-        "mistweaverco/kulala.nvim",
-        ft = { "http", "rest" },
-        opts = {},
     },
 
     -- ── REFACTORING (extract variable/function with real scope) ──────
@@ -812,8 +851,7 @@ local plugins = {
             additional_presets = {
                 project = {
                     filename = function()
-                        local git_root =
-                            vim.fn.systemlist("git -C " .. vim.fn.expand "%:p:h" .. " rev-parse --show-toplevel")[1]
+                        local git_root = vim.fs.root(vim.fn.expand "%:p:h", { ".git" })
                         local name = git_root and vim.fn.fnamemodify(git_root, ":t") or "sin-proyecto"
                         return name .. ".md"
                     end,
@@ -885,26 +923,7 @@ local plugins = {
         end,
     },
 
-    -- ── SURROUND (add/change/delete quotes, tags, parentheses) ──
-    {
-        "kylechui/nvim-surround",
-        event = { "BufReadPost", "BufNewFile" },
-        opts = {},
-    },
-
-    -- ── ILLUMINATE (highlight other occurrences of the symbol) ──
-    {
-        "RRethy/vim-illuminate",
-        event = { "BufReadPost", "BufNewFile" },
-        config = function()
-            require("illuminate").configure {
-                delay = 150,
-                filetypes_denylist = { "NvimTree", "TelescopePrompt", "alpha" },
-            }
-        end,
-    },
-
-    -- ── AVANTE.NVIM: agentic AI (chat/assisted edits) with Gemini ────
+    -- ── AVANTE.NVIM: agentic AI with NVIDIA NIM / OpenRouter ──────
     -- Unlike Codeium (inline suggestions while typing), Avante is a
     -- Cursor-style assistant: ask in natural language and it edits,
     -- explains or generates code with project context.
@@ -928,142 +947,7 @@ local plugins = {
                 ft = { "markdown", "Avante" },
             },
         },
-        opts = {
-            provider = "gemini", -- Always start with the most capable model
-
-            providers = {
-                gemini = {
-                    endpoint = "https://generativelanguage.googleapis.com/v1beta/models",
-                    model = "gemini-3.1-pro-preview",
-                    timeout = 30000,
-                    context_window = 1048576,
-                    extra_request_body = { generationConfig = { temperature = 0.3 } },
-                },
-                gemini_flash38 = {
-                    __inherited_from = "gemini",
-                    model = "gemini-3.8-flash",
-                },
-                gemini_flash37 = {
-                    __inherited_from = "gemini",
-                    model = "gemini-3.7-flash",
-                },
-                gemini_flash36 = {
-                    __inherited_from = "gemini",
-                    model = "gemini-3.6-flash",
-                },
-                gemini_flash_lite = {
-                    __inherited_from = "gemini",
-                    model = "gemini-3.5-flash-lite",
-                },
-            },
-
-            behaviour = {
-                auto_suggestions = false,
-                enable_fastapply = false,
-            },
-            repo_map = {
-                ignore_patterns = { ".git", "node_modules" },
-            },
-        },
-    },
-
-    -- ── UFO (real folding through Treesitter/LSP) ──────────────────
-    {
-        "kevinhwang91/nvim-ufo",
-        dependencies = { "kevinhwang91/promise-async" },
-        event = { "BufReadPost", "BufNewFile" },
-        opts = {
-            provider_selector = function()
-                return { "treesitter", "indent" }
-            end,
-        },
-        init = function()
-            vim.o.foldcolumn = "1"
-            vim.o.foldlevel = 99
-            vim.o.foldlevelstart = 99
-            vim.o.foldenable = true
-        end,
-    },
-
-    -- ── REST CLIENT (exercise APIs without leaving the editor) ─────
-    {
-        "mistweaverco/kulala.nvim",
-        ft = { "http", "rest" },
-        opts = {},
-    },
-
-    -- ── REFACTORING (extract variable/function with real scope) ──────
-    {
-        "ThePrimeagen/refactoring.nvim",
-        dependencies = { "nvim-lua/plenary.nvim", "nvim-treesitter/nvim-treesitter" },
-        cmd = { "Refactor" },
-        keys = { { "<leader>re", mode = "v" }, { "<leader>rf", mode = "v" } },
-        opts = {},
-    },
-
-    -- ── MULTI-CURSOR ────────────────────────────────────────────────
-    {
-        "jake-stewart/multicursor.nvim",
-        branch = "1.0",
-        event = { "BufReadPost", "BufNewFile" },
-    },
-
-    -- ── MODO ZEN (foco, oculta UI) ──────────────────────────────────
-    {
-        "folke/zen-mode.nvim",
-        cmd = "ZenMode",
-        opts = {
-            window = { width = 0.85 },
-            on_open = function(win)
-                -- ZenMode opens a brand-new floating window that inherits the
-                -- default local 'fillchars' (+ / - and the fold line) instead
-                -- of the statuscol triangles. Copy the GLOBAL value, because
-                -- vim.o would read the float's own local value.
-                local fillchars = vim.api.nvim_get_option_value("fillchars", { scope = "global" })
-                vim.api.nvim_set_option_value("fillchars", fillchars, { win = win })
-            end,
-        },
-    },
-    {
-        "folke/twilight.nvim",
-        cmd = "Twilight",
-        opts = {},
-    },
-
-    -- ── LATEX (VimTeX + continuous compilation + Zathura) ────────────
-    {
-        "lervag/vimtex",
-        ft = "tex",
-        init = function()
-            vim.g.vimtex_view_method = "zathura"
-            vim.g.vimtex_compiler_method = "latexmk"
-            vim.g.vimtex_compiler_latexmk = {
-                continuous = 1,
-                options = {
-                    "-shell-escape",
-                    "-verbose",
-                    "-file-line-error",
-                    "-synctex=1",
-                    "-interaction=nonstopmode",
-                },
-            }
-            vim.g.vimtex_quickfix_mode = 0
-            vim.g.vimtex_syntax_conceal = {
-                accents = true,
-                ligatures = true,
-                cites = true,
-                fancy = true,
-                spacing = true,
-                greek = true,
-                math_bounds = true,
-                math_delimiters = true,
-                math_fracs = true,
-                math_super_sub = true,
-                math_symbols = true,
-                sections = false,
-                styles = true,
-            }
-        end,
+        opts = require("configs.avante").opts,
     },
 }
 

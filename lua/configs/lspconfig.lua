@@ -4,11 +4,32 @@ local on_attach = nvchad_lsp.on_attach
 local on_init = nvchad_lsp.on_init
 local capabilities = require("blink.cmp").get_lsp_capabilities(nvchad_lsp.capabilities)
 
+-- Inlay hints and code lens are opt-in per client: only servers that
+-- advertise the capability get them, and the UI toggles can still turn
+-- them off per buffer.
+local function attach_extras(client, bufnr)
+    -- ts_ls reports inlay-hint support in Vue buffers but rejects the
+    -- request; it is only a forwarder there, so leave hints to vue_ls.
+    local vue_buffer = vim.bo[bufnr].filetype == "vue"
+    if not vue_buffer and client.name ~= "ts_ls" and client:supports_method("textDocument/inlayHint", bufnr) then
+        vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+    end
+    if client:supports_method("textDocument/codeLens", bufnr) then
+        -- enable() also refreshes in Neovim 0.12; refresh() is deprecated.
+        vim.lsp.codelens.enable(true, { bufnr = bufnr })
+    end
+end
+
+local function on_attach_extended(client, bufnr)
+    on_attach(client, bufnr)
+    attach_extras(client, bufnr)
+end
+
 -- ╔══════════════════════════════════════════════════════════════╗
 -- ║  BASE CONFIG FOR EVERY SERVER                                ║
 -- ╚══════════════════════════════════════════════════════════════╝
 vim.lsp.config("*", {
-    on_attach = on_attach,
+    on_attach = on_attach_extended,
     on_init = on_init,
     capabilities = capabilities,
 })
@@ -23,12 +44,10 @@ local servers = {
     "intelephense",
     "emmet_ls",
     "clangd",
-    "rust_analyzer",
     "gopls",
     "omnisharp",
     "asm_lsp",
     "kotlin_language_server",
-    "dartls",
     "pyright",
     "bashls",
     "powershell_es",
@@ -44,7 +63,24 @@ local servers = {
     "tailwindcss",
     "eslint",
     "svelte",
+    -- Newly enabled language servers (installed through Mason).
+    "zls",
+    "hls",
+    "elixirls",
+    "sourcekit",
+    "vue_ls",
+    "yamlls",
+    "jsonls",
+    "harper_ls",
 }
+
+-- ── ts_ls: also attach to Vue SFCs ────────────────────────────
+-- vue_ls runs in hybrid mode and forwards TypeScript requests to
+-- ts_ls/vtsls. Without this, opening a .vue file logs that no TS client
+-- was found and Vue completions/diagnostics stay empty.
+vim.lsp.config("ts_ls", {
+    filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact", "vue" },
+})
 
 -- ── Pyright: advanced analysis ────────────────────────────────
 vim.lsp.config("pyright", {
@@ -104,6 +140,9 @@ vim.lsp.config("sqls", {
     cmd = { "sqls" },
     filetypes = { "sql", "mysql", "plsql" },
     on_attach = function(client, bufnr)
+        -- Server-specific on_attach replaces the wildcard one, so compose it
+        -- explicitly or SQL buffers lose the shared LSP mappings.
+        on_attach_extended(client, bufnr)
         require("sqls").on_attach(client, bufnr) -- enables sqls commands (run query, switch connection)
     end,
     settings = {
@@ -170,6 +209,36 @@ vim.lsp.config("jsonls", {
         json = {
             schemas = require("schemastore").json.schemas(),
             validate = { enable = true },
+        },
+    },
+})
+
+-- ── sourcekit: Swift only (C/C++ stay with clangd) ─────────────
+vim.lsp.config("sourcekit", {
+    filetypes = { "swift", "objc", "objcpp" },
+})
+
+-- ── harper_ls: grammar and spelling for prose only ──────────────
+-- Hints, not squiggles in code. The toggle is <leader>uh.
+vim.lsp.config("harper_ls", {
+    filetypes = { "markdown", "text", "gitcommit" },
+    on_attach = function(client, bufnr)
+        on_attach_extended(client, bufnr)
+        local ns = vim.lsp.diagnostic.get_namespace(client.id)
+        vim.diagnostic.config({ virtual_text = false, signs = false }, ns)
+    end,
+    settings = {
+        ["harper-ls"] = {
+            diagnosticSeverity = "hint",
+            dialect = "American",
+            isolateEnglish = true,
+            linters = {
+                SentenceCapitalization = false,
+                LongSentences = false,
+            },
+            markdown = { IgnoreLinkTitle = true },
+            excludePatterns = { "**/node_modules/**", "**/CHANGELOG.md", "**/LICENSE" },
+            maxFileLength = 120000,
         },
     },
 })

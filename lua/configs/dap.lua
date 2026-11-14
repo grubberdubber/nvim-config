@@ -18,6 +18,57 @@ dapui.setup {
     },
 }
 
+-- ── ONE STATUSLINE IN THE DEBUGGER ───────────────────────────────
+-- With `laststatus=2`, every DAP panel gets its own statusline in addition
+-- to its title, which produces the empty bars between Scopes/Breakpoints/
+-- Stacks/Watches. Keep the single global bar; the panel names stay in the
+-- winbar. Some DAP/terminal transitions can set laststatus back to 2, so
+-- re-assert it whenever a DAP buffer is entered.
+local dapui_status_group = vim.api.nvim_create_augroup("DapUiStatusline", { clear = true })
+
+local function is_dapui(buf)
+    if not vim.api.nvim_buf_is_valid(buf) then
+        return false
+    end
+    local ft = vim.bo[buf].filetype
+    return ft:match "^dapui_" ~= nil or ft == "dap-repl"
+end
+
+local function has_dapui_window()
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if is_dapui(vim.api.nvim_win_get_buf(win)) then
+            return true
+        end
+    end
+    return false
+end
+
+local function keep_one_statusline(buf)
+    -- Terminal windows are handled by configs/terminal_statusline.lua, which
+    -- keeps the same global statusline.
+    if vim.bo[buf].buftype == "terminal" then
+        return
+    end
+
+    if not (is_dapui(buf) or has_dapui_window()) then
+        return
+    end
+
+    vim.schedule(function()
+        if vim.o.laststatus ~= 3 and vim.bo.buftype ~= "terminal" then
+            vim.o.laststatus = 3
+            pcall(vim.cmd, "redrawstatus")
+        end
+    end)
+end
+
+vim.api.nvim_create_autocmd({ "FileType", "BufEnter", "WinEnter" }, {
+    group = dapui_status_group,
+    callback = function(args)
+        keep_one_statusline(args.buf)
+    end,
+})
+
 dap.listeners.after.event_initialized["dapui_config"] = function()
     dapui.open()
 end

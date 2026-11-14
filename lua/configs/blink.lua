@@ -130,8 +130,21 @@ return {
         },
     },
 
+    cmdline = {
+        enabled = true,
+        keymap = { preset = "cmdline" },
+        sources = { "cmdline", "buffer" },
+        completion = {
+            -- Show the command menu as soon as `:` is typed, but never
+            -- preselect or auto-insert a command the user did not choose.
+            menu = { auto_show = true },
+            ghost_text = { enabled = false },
+            list = { selection = { preselect = false, auto_insert = false } },
+        },
+    },
+
     sources = {
-        default = { "lsp", "path", "snippets", "buffer", "dadbod", "html_values", "css_selectors" },
+        default = { "lsp", "path", "snippets", "buffer", "dadbod", "html_values", "css_selectors", "emoji" },
         min_keyword_length = 0,
         providers = {
             dadbod = {
@@ -146,6 +159,24 @@ return {
                 name = "CSS project",
                 module = "configs.css_selectors",
                 score_offset = 5,
+            },
+            -- Keep emoji completion out of code and out of every `:` use
+            -- (YAML, CSS, URLs, ternaries). It only appears for `:sm`-style
+            -- triggers in prose filetypes.
+            emoji = {
+                name = "Emoji",
+                module = "blink-emoji",
+                score_offset = 10,
+                opts = { insert = true, trigger = { ":" } },
+                should_show_items = function(ctx)
+                    local ft = vim.bo[ctx.bufnr].filetype
+                    if ft ~= "markdown" and ft ~= "gitcommit" then
+                        return false
+                    end
+                    local before = ctx.line:sub(1, ctx.cursor[2])
+                    return before:match "^:[%a][%a][%w_+%-]*$" ~= nil
+                        or before:match "[%s\"'`]:[%a][%a][%w_+%-]*$" ~= nil
+                end,
             },
             lsp = {
                 fallbacks = {},

@@ -13,11 +13,19 @@ vim.g.nvim_start_hrtime = (vim.uv or vim.loop).hrtime()
 -- before the first LSP process starts.
 local mason_bin = vim.fn.stdpath "data" .. "/mason/bin"
 if vim.fn.isdirectory(mason_bin) == 1 then
+    -- Mason tools such as tree-sitter and rust-analyzer must be visible to
+    -- plugins that use vim.fn.executable() during startup, not only to the
+    -- LSP client after Mason has loaded.
+    vim.env.PATH = vim.env.PATH .. ":" .. mason_bin
     vim.fn.system { "chmod", "-R", "+x", mason_bin }
 end
 
 vim.g.base46_cache = vim.fn.stdpath "data" .. "/base46/"
 vim.g.mapleader = " "
+
+-- Cache compiled Lua modules. This is a no-op on filesystem changes and
+-- shaves a noticeable amount off every subsequent startup.
+vim.loader.enable()
 
 -- ── LAZY.NVIM BOOTSTRAP ──────────────────────────────────────────
 local lazypath = vim.fn.stdpath "data" .. "/lazy/lazy.nvim"
@@ -48,6 +56,9 @@ require("lazy").setup({
 }, {
     defaults = { lazy = true },
     git = { timeout = 900 }, -- 15 min: avante compiles several Rust crates
+    -- No plugin in this config uses luarocks. Leaving lazy's rock support on
+    -- only produced a broken hererocks/luarocks health warning on every start.
+    rocks = { enabled = false },
     install = { colorscheme = { "nvchad" } },
     ui = { icons = { ft = "", lazy = "󰂠 ", loaded = "", not_loaded = "" } },
     performance = {
