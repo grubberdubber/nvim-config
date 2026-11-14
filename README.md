@@ -62,8 +62,10 @@ portable, but `bootstrap.sh` uses `pacman` and is intentionally Arch-specific.
 | --- | --- |
 | Neovim | 0.12 or newer |
 | OS | Arch Linux (for `bootstrap.sh`) |
-| Terminal | Kitty, or any terminal with true color and a Nerd Font |
+| Terminal | Alacritty with true color and a Nerd Font |
 | Build tools | `git`, `make`, `cargo` (avante.nvim) |
+| Tree-sitter | `tree-sitter-cli` 0.25.x (0.27 removed `--no-bindings`, which the pinned parser build uses) |
+| Tests | `cargo-nextest` for Rust; pytest and Go toolchains |
 | Search | `ripgrep`, `fd` |
 | Runtime | `nodejs`, `tree-sitter-cli`, `jq` (optional, for Hurl) |
 
@@ -73,7 +75,8 @@ Install the base toolchain on Arch:
 sudo pacman -Syu --needed git base-devel ripgrep fd nodejs tree-sitter-cli cargo
 ```
 
-Set your terminal font to a Nerd Font, or icons will render as missing glyphs.
+Set your terminal font to a Nerd Font, or icons will render as missing glyphs. The
+configuration targets Alacritty; it does not require terminal ligatures.
 
 ## Installation
 
@@ -121,7 +124,7 @@ nvim --headless "+checkhealth" +qa
     ├── autocmds.lua          # autocommands and integrations
     ├── configs/              # blink, conform, lint, LSP, DAP, panels, SQL, Hurl
     ├── dashboard/            # config, data, navigation, renderer and sessions
-    ├── plugins/              # lazy.nvim specs (init, extras, markdown, api)
+    ├── plugins/              # lazy.nvim specs (init, extras, markdown, api, testing, development)
     └── themes/               # custom base46 themes
 ```
 
@@ -142,7 +145,16 @@ nvim --headless "+checkhealth" +qa
 `blink.cmp` provides LSP, path, snippet and buffer completion, with custom sources for
 CSS selectors, HTML values, Dadbod and SQL administration. `<Tab>` selects the next item
 when the menu is open and jumps over closing delimiters otherwise; `<CR>` always inserts a
-newline.
+newline. Command-line completion opens automatically after `:` without preselecting a
+command. Emoji completion is limited to Markdown and gitcommit messages and needs at
+least two letters after the colon (`:sm`); in Markdown a completed `:shortcode:` is
+automatically converted to its emoji. Windsurf provides inline AI suggestions with
+virtual text; `<C-g>` accepts and `<C-]>` dismisses. The search counter (`[3/7]`) and the
+visual selection size (`3 lines, 51 chars`) appear in the command-line row below the
+statusline, never inside either bar; they are restored after commands such as `:w` and
+`:Lazy`. Both bars use the same theme-aware panel tone with a readable minimum contrast.
+The winbar shows the language-colored file icon, and puts indent style (`Sp:N`/`Tab:N`),
+unlabelled error/warning/hint counts and the icon-plus-count of files on the right.
 
 ### LSP, formatting and linting
 
@@ -151,6 +163,10 @@ newline.
 - `nvim-lint` runs SQLFluff with dialect awareness, Stylelint and markdownlint-cli2.
 - Mason manages language servers and external tools; `mason-nvim-dap` installs debug
   adapters.
+- Inlay hints and code lens are enabled per client; `<leader>ui` and `<leader>uC` toggle
+  them for the current buffer.
+- Harper checks grammar and spelling only in Markdown, text and gitcommit buffers;
+  `<leader>uh` toggles it. Ruff, ShellCheck, Hadolint and Yamllint run through nvim-lint.
 
 ### Dashboard
 
@@ -177,6 +193,13 @@ byte-offset assumptions for multibyte icons.
   `<leader>H*` mappings.
 - Sniprun and Iron for running code and opening REPLs without leaving the editor.
 
+### Testing and Lua development
+
+- Neotest runs tests through adapters for Python (pytest), Go and Rust (cargo-nextest).
+  Results are available in the summary and output panels.
+- lazydev gives `lua_ls` the Neovim runtime and the libraries of required plugins, so
+  configuration and plugin development use accurate types and fewer false diagnostics.
+
 ### Markdown
 
 `render-markdown.nvim` renders headings, tables, checkboxes and code blocks in the buffer;
@@ -196,8 +219,10 @@ The configuration includes LSP, formatting and debugging support for:
 | Documents | Markdown, LaTeX |
 | Other | Elixir, Haskell, Nim, Scala |
 
-Language servers that require an external SDK are enabled only when their executable is
-available; otherwise Neovim skips them cleanly.
+Language servers that require an external SDK (Zig, Haskell, Elixir, Swift, Flutter) are
+enabled only when their executable is available; otherwise Neovim skips them cleanly.
+Rust uses rustaceanvim and Cargo.toml gets crates.nvim; Flutter/Dart uses
+flutter-tools.nvim when the Flutter SDK is in `PATH`.
 
 ## Key bindings
 
@@ -239,6 +264,9 @@ available; otherwise Neovim skips them cleanly.
 | `[d` / `]d` | Previous / next diagnostic |
 | `<leader>tt` | Toggle diagnostics in Trouble |
 | `<leader>ts` | Toggle document symbols |
+| `<leader>ui` | Toggle inlay hints |
+| `<leader>uC` | Toggle code lens |
+| `<leader>uh` | Toggle Harper grammar checker |
 
 ### Debugging
 
@@ -250,6 +278,18 @@ available; otherwise Neovim skips them cleanly.
 | `Shift+F5` | Stop |
 | `<leader>B` | Conditional breakpoint |
 | `<leader>du` | Toggle debugger UI |
+
+### Testing
+
+| Key | Action |
+| --- | --- |
+| `<leader>Tt` | Run the nearest test |
+| `<leader>Tf` | Run tests in the current file |
+| `<leader>Tl` | Re-run the last test |
+| `<leader>Td` | Debug the nearest test |
+| `<leader>Ts` | Toggle the test summary |
+| `<leader>To` | Open the test output |
+| `<leader>Tx` | Stop the current test run |
 
 ## Themes
 

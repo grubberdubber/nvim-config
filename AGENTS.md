@@ -14,7 +14,7 @@ Actúa como Staff Engineer del ecosistema Neovim. Objetivo: una configuración p
 | Neovim   | 0.12.5 (usar APIs 0.11+: `vim.system`, `vim.fs.root`, `vim.diagnostic.count`, `vim.lsp.config`) |
 | Base     | NvChad v2.5 + base46 + lazy.nvim                                                                |
 | SO       | Arch Linux                                                                                      |
-| Terminal | kitty (antes Alacritty)                                                                         |
+| Terminal | Alacritty                                                                                        |
 | Repo     | `github.com/grubberdubber/nvim-config`, rama `main`                                             |
 | Shell    | zsh                                                                                             |
 
@@ -34,9 +34,11 @@ Cada una fue pedida, probada y aprobada por el dueño.
 
 ### Breadcrumb / winbar (`lua/chadrc.lua`, función `winbar_path_mode()` y `WinBarDraw`)
 
-- Ruta tipo VS Code, a la izquierda, pequeña y discreta, con colores derivados del tema (`nvim_get_hl` + mezcla).
-- Incluye el **contador de archivos** y el indicador de modificado (lápiz, en gris vía `WinCrumbMod`, no naranja).
-- No modificar la statusline, que está bien.
+- Ruta tipo VS Code, a la izquierda, pequeña y discreta, con colores derivados del tema (`nvim_get_hl` + mezcla). El icono del archivo usa el color de `nvim-web-devicons` con el fondo de la barra.
+- La barra completa usa el tono de panel del tema (`Pmenu.bg`, que base46 llena con `one_bg`) normalizado a un rango de luminancia legible; es el mismo fondo en la statusline inferior. No volver a dejarla transparente, gris fija ni pintar el borde izquierdo con `St_file_txt`.
+- A la derecha, en este orden: `Sp:N`/`Tab:N`, contadores de errores/warnings/hints **sin etiquetas**, y el contador de archivos con su icono `󰈚` (conserva el color original de `St_file_txt`, pero sobre el fondo de la barra). El indicador de modificado es la lápiz gris `WinCrumbMod`. Los colores del breadcrumb y de `Sp:N`/`Tab:N` se recalculan al cambiar de tema.
+- La statusline inferior muestra solo modo, archivo, git y posición; **no** debe llevar diagnósticos, `Sp:N`/`Tab:N`, la búsqueda ni el tamaño de la selección visual. Los grupos `St_file_txt`/`St_pos_txt` no se usan directamente porque traen un fondo más oscuro; el bloque git usa `St_git*` con el fondo de la barra. No volver a añadir la barra `│` al git.
+- `configs/status_hud.lua` dibuja `[N/M]` y `N lines, M chars` en la fila de comandos, **debajo** de la statusline y de la winbar. Mientras el HUD está activo oculta el `showcmd` nativo para no duplicar el número; `:w`, `/` y `:Lazy` reemplazan temporalmente esa fila y el HUD se restaura después. No devolver estos contadores a ninguna de las dos barras.
 
 ### `listchars` + guías de indentación (`lua/options.lua`, `lua/plugins/init.lua`)
 
@@ -57,14 +59,15 @@ Cada una fue pedida, probada y aprobada por el dueño.
 - `tag_errors.lua`: marca en rojo `< > /` de etiquetas mal formadas. Color propio `#FF3B3B` (fg), `#3D0A10` (bg), undercurl, grupo `TagDelimiterError`. Reglas HTML específicas (void, cierres opcionales, svg/math); **XML no debe mostrar falsos errores**. Se activa con `require("configs.tag_errors").setup()` en `autocmds.lua`.
 - `html_values.lua`, `sql_*`: fuentes y resaltado para HTML y SQL.
 - `conform.lua`, `lint.lua`, `lspconfig.lua`, `dap.lua`: formatters, linters, LSP y depuración.
+- `status_hud.lua`: contadores de búsqueda y selección visual en la fila inferior; ver la sección de breadcrumb.
 
 ### Otros
 
 - `@tag.delimiter` en `chadrc.lua` = `#CFE3F7` (blanco azulado suave; el dueño lo eligió).
 - Temas en `lua/themes/`: `fluorodark.lua` (neón; `MatchParen`/`MatchWord` con fondo `#16304F`) y `sakura_dracula.lua` (pastel sobre fondo Dracula `#282A36`, `TRANSPARENT = false`). No mezcles sus paletas. Al editar un tema conserva todas las claves de `base_30` y `base_16` y la llamada final a `require("base46").override_theme`.
 - Parches a la documentación de blink con rainbow-delimiters en `autocmds.lua`: no tocar.
-- Codeium: `<C-g>` acepta, `<C-]>` limpia (en `mappings.lua`). `;` = `:` en modo normal.
-- Plugins de IA: avante.nvim. Hay un error conocido con luarocks/`mega` (ver pendientes).
+- Windsurf: `<C-g>` acepta, `<C-]>` limpia; usa virtual text, `enable_cmp_source = false` y el commit con el nil check (`46fe768`). La autenticación se comparte en `~/.codeium/config.json` (claves `apiKey` y `api_key`). El color de sugerencia se hereda de `Comment`. `;` = `:` en modo normal.
+- Avante: el menú `<leader>ag` solo ofrece proveedores NVIDIA NIM y OpenRouter; no reintroducir Gemini en ese menú. Lee `NVIDIA_API_KEY` y `OPENROUTER_API_KEY` del entorno (nunca hardcodearlas en el repo). `;` = `:` en modo normal.
 - Cliente HTTP: `lua/plugins/api.lua` con `jellydn/hurl.nvim`; atajos locales `<leader>H*` solo en archivos `.hurl`; requiere `hurl` y `jq`. Decisión consciente: **no** usar kulala.nvim (núcleo cerrado, requiere token de licencia) ni rest.nvim (sin mantenimiento).
 - Fuentes/emoji: la configuración de fontconfig vive en `~/.config/fontconfig/conf.d/` (`60-emoji-first.conf`, `61-emoji-fix.conf`). No se toca desde Neovim.
 - La configuracion tiene que estar toda en ingles
@@ -105,11 +108,11 @@ Objetivo: 35-40 lenguajes sin solapamientos ni consumo en reposo: Rust, C, C++, 
 ## 8. Pendientes conocidos
 
 - **Dashboard**: reescrito y modular (`lua/dashboard/{init,data,render,nav,sessions,config}.lua`). Cubre arte ASCII con degradado del tema, estado git asíncrono (rama, cambios, ahead/behind, stash, último commit), diagnósticos, LSP, formatters (faltantes), plugins, startup real, proyectos/directorios/recientes, pins, TODOs con ripgrep, sesiones por proyecto+rama (`:mksession`), búsqueda con `/`, navegación `hjkl`/flechas y lanzadores con degradación limpia si falta Telescope/fzf/lazygit. Sin `listchars` ni guías de indentación: eso solo aplica al dashboard. Pruebas headless: `nvim --headless -u init.lua -c "luafile tests/dashboard_spec.lua"`. Atajo de `listchars` en archivos normales: `<leader>ul`.
-- Bloques duplicados en `lua/plugins/init.lua`.
 - Confirmar `ensure_installed` de treesitter (incluir `hurl`).
+- Bloques duplicados de `lua/plugins/init.lua`: eliminados; no reintroducir specs repetidas.
 - Error de avante.nvim con luarocks/`mega`.
 - Probar `bootstrap.sh` en una máquina limpia.
-- Decidir sobre Codeium (autenticación o retirada).
+- Codeium/Windsurf conserva la autenticación existente; si el servidor no arranca, ejecutar `:Codeium Auth`.
 - Completado de cabeceras/métodos HTTP en archivos `.hurl`: el plan es una fuente propia de blink.cmp (o un LSP en Rust) con datos de los registros IANA; `hurl-lsp` fue evaluado y descartado por inmaduro (pre-1.0, 0 estrellas, sin nombres de cabeceras).
 
 ## 9. Qué NO hacer
