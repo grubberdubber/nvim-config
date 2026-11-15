@@ -204,7 +204,7 @@ Flutter/Dart uses flutter-tools.nvim when the SDK is in `PATH`.
 ├── ftplugin/                  # per-language overrides (jdtls, ...)
 ├── assets/                    # screenshots used by this README
 ├── scripts/contrast_audit.lua # WCAG contrast report for the active theme
-├── tests/dashboard_spec.lua   # headless dashboard checks
+├── tests/                     # headless suites (dashboard, completion, tags, saves, Mason)
 └── lua/
     ├── chadrc.lua             # theme, statusline, winbar, global highlights
     ├── mappings.lua           # global keymaps
@@ -322,17 +322,21 @@ sort -k2 -rn /tmp/startup.log | head -20
 
 ## Validation
 
-The repository ships a headless dashboard suite, a Lua syntax check and a
-formatting check (also run in CI):
+The repository ships five headless suites plus a Lua syntax and formatting
+check, all run in CI:
 
 ```bash
-nvim --headless -u init.lua -c "luafile tests/dashboard_spec.lua"
+for spec in tests/*_spec.lua; do
+  nvim --headless -u init.lua -c "luafile $spec"
+done
 npx --yes @johnnymorganz/stylua-bin@latest --check init.lua lua tests
 nvim --headless -u NONE -c "lua for _, f in ipairs(vim.fn.glob('lua/**/*.lua', false, true)) do assert(loadfile(f), f) end" -c "qa"
 ```
 
-The dashboard suite covers layout centering, listchars behavior, sessions, pins,
-diagnostics and Trouble integration. For a full health check:
+The suites cover dashboard layout and state, per-language class/id detection,
+malformed-tag ranges (HTML, XML, JSX and SVG), the save-time cleanup rules and
+the Mason executable-bit fixer. CI also lints the Markdown docs and runs
+ShellCheck on `bootstrap.sh`. For a full health check:
 
 ```bash
 nvim --headless "+checkhealth" +qa

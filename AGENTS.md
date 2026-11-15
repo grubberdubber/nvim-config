@@ -56,7 +56,7 @@ Cada una fue pedida, probada y aprobada por el dueño.
 
 ### Módulos propios (`lua/configs/`)
 
-- `css_selectors.lua`: fuente de blink multi-lenguaje (clases/ids en HTML, JSX/TSX, Vue, Svelte, Ruby, Dart, etc.). Reglas delicadas: Svelte `class:` se detecta con `^class:([%a_][%w_-]*)`; Dart usa `classes`. Prueba cualquier cambio en los lenguajes anteriores.
+- `css_selectors.lua`: fuente de blink multi-lenguaje (clases/ids en HTML, JSX/TSX, Vue, Svelte, Ruby, Dart, etc.). Reglas delicadas: Svelte `class:` se detecta con `^class:([%a_][%w_-]*)`; Dart usa `classes`. Los patrones por lenguaje viven en `css_selectors_data.lua` y tienen suite propia (`tests/css_selectors_spec.lua`); actualiza ambos al tocar una regla.
 - `tag_errors.lua`: marca en rojo `< > /` de etiquetas mal formadas. Color propio `#FF3B3B` (fg), `#3D0A10` (bg), undercurl, grupo `TagDelimiterError`. Reglas HTML específicas (void, cierres opcionales, svg/math); **XML no debe mostrar falsos errores**. Se activa con `require("configs.tag_errors").setup()` en `autocmds.lua`.
 - `html_values.lua`, `sql_*`: fuentes y resaltado para HTML y SQL.
 - `conform.lua`, `lint.lua`, `lspconfig.lua`, `dap.lua`: formatters, linters, LSP y depuración.
@@ -105,11 +105,12 @@ Objetivo: 35-40 lenguajes sin solapamientos ni consumo en reposo: Rust, C, C++, 
 
 - Commits en **Conventional Commits** (`feat(blink): ...`, `fix(winbar): ...`, `chore: ...`), un cambio lógico por commit, cuerpo con el porqué.
 - Antes de commitear, revisa `git status -sb` y `git diff --stat`: que no se escapen cambios importantes ni archivos generados (`node_modules`, `graphify-out`, `repomix-output.xml` según `.gitignore`).
+- CI (`.github/workflows/ci.yml`) corre stylua, sintaxis, arranque headless, `tests/*_spec.lua`, markdownlint y ShellCheck sobre `bootstrap.sh`. Instala los parsers de prueba con `:TSInstallSync!`; si faltan en local, `tests/tag_errors_spec.lua` los salta y lo indica.
 - No hagas push sin que el dueño lo pida.
 
 ## 8. Pendientes conocidos
 
-- **Dashboard**: reescrito y modular (`lua/dashboard/{init,data,render,nav,sessions,config}.lua`). Cubre arte ASCII con degradado del tema, estado git asíncrono (rama, cambios, ahead/behind, stash, último commit), diagnósticos, LSP, formatters (faltantes), plugins, startup real, proyectos/directorios/recientes, pins, TODOs con ripgrep, sesiones por proyecto+rama (`:mksession`), búsqueda con `/`, navegación `hjkl`/flechas y lanzadores con degradación limpia si falta Telescope/fzf/lazygit. Sin `listchars` ni guías de indentación: eso solo aplica al dashboard. Pruebas headless: `nvim --headless -u init.lua -c "luafile tests/dashboard_spec.lua"`. Atajo de `listchars` en archivos normales: `<leader>ul`.
+- **Dashboard**: reescrito y modular (`lua/dashboard/{init,data,render,nav,sessions,config}.lua`). Cubre arte ASCII con degradado del tema, estado git asíncrono (rama, cambios, ahead/behind, stash, último commit), diagnósticos, LSP, formatters (faltantes), plugins, startup real, proyectos/directorios/recientes, pins, TODOs con ripgrep, sesiones por proyecto+rama (`:mksession`), búsqueda con `/`, navegación `hjkl`/flechas y lanzadores con degradación limpia si falta Telescope/fzf/lazygit. Sin `listchars` ni guías de indentación: eso solo aplica al dashboard. Pruebas headless: `for f in tests/*_spec.lua; do nvim --headless -u init.lua -c "luafile $f"; done`. Atajo de `listchars` en archivos normales: `<leader>ul`.
 - Bloques duplicados de `lua/plugins/init.lua`: eliminados; no reintroducir specs repetidas.
 - Error de avante.nvim con luarocks/`mega`.
 - Probar `bootstrap.sh` en una máquina limpia.
