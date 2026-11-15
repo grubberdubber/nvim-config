@@ -12,6 +12,11 @@ return {
             "nvim-neotest/neotest-python",
             "nvim-neotest/neotest-go",
             "rouge8/neotest-rust",
+            "marilari88/neotest-vitest",
+            "rcasia/neotest-java",
+            "olimorris/neotest-phpunit",
+            "olimorris/neotest-rspec",
+            "sidlatau/neotest-dart",
         },
         keys = {
             {
@@ -70,6 +75,11 @@ return {
                     require "neotest-python" { dap = { justMyCode = false } },
                     require "neotest-go",
                     require "neotest-rust",
+                    require "neotest-vitest",
+                    require "neotest-java",
+                    require "neotest-phpunit",
+                    require "neotest-rspec",
+                    require "neotest-dart" { command = "flutter" },
                 },
                 output = { open_on_run = false },
                 quickfix = { enabled = false, open = false },
