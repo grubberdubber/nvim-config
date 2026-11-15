@@ -33,3 +33,23 @@ jobs:
 
       - name: Headless startup
         run: timeout 300 nvim --headless -u init.lua "+qa"
+
+      - name: Install Tree-sitter CLI
+        run: npm install -g tree-sitter-cli
+
+      - name: Install test parsers
+        run: timeout 600 nvim --headless -u init.lua "+TSInstallSync! html xml tsx css" +qa
+
+      - name: Test suite
+        run: |
+          for spec in tests/*_spec.lua; do
+            echo "::group::$spec"
+            timeout 300 nvim --headless -u init.lua -c "luafile $spec"
+            echo "::endgroup::"
+          done
+
+      - name: Markdown lint
+        run: npx --yes markdownlint-cli2@0.24.1 --config markdownlint-cli2.yaml README.md AGENTS.md
+
+      - name: ShellCheck
+        run: shellcheck bootstrap.sh
