@@ -5,9 +5,12 @@ local H = dofile "tests/helpers.lua"
 local tmp = vim.fn.tempname()
 vim.fn.mkdir(tmp, "p")
 
--- The lint autocommand runs external linters on the temporary files; this suite
--- only covers the save-time cleanup, so it must not depend on installed tools.
+-- The lint autocommand runs external linters on the temporary files, and the
+-- Markdown filetype enables spell, whose missing dictionary prompts for a
+-- download. This suite only covers the save-time cleanup, so keep it offline
+-- and independent of installed tools.
 pcall(vim.api.nvim_clear_autocmds, { group = "nvim-lint" })
+pcall(vim.api.nvim_clear_autocmds, { group = "nvim.spellfile" })
 
 local function path(name)
     return tmp .. "/" .. name
