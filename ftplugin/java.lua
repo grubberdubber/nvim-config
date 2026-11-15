@@ -4,7 +4,7 @@
 vim.schedule(function()
     local ok_jdtls, jdtls = pcall(require, "jdtls")
     if not ok_jdtls then
-        vim.notify("ftplugin/java.lua: could not load nvim-jdtls - " .. tostring(jdtls), vim.log.levels.ERROR)
+        vim.notify_once("ftplugin/java.lua: could not load nvim-jdtls - " .. tostring(jdtls), vim.log.levels.ERROR)
         return
     end
 
@@ -37,7 +37,7 @@ vim.schedule(function()
     -- instead of starting silently without working debug support
     -- doing this, which has cost hours of debugging in the past).
     if #bundles == 0 then
-        vim.notify(
+        vim.notify_once(
             "jdtls: java-debug-adapter/java-test bundles not found. Run :Mason and make sure both are installed.",
             vim.log.levels.WARN
         )
@@ -82,12 +82,12 @@ vim.schedule(function()
             vim.defer_fn(function()
                 local configs = require("dap").configurations.java
                 if configs and #configs > 0 then
-                    vim.notify(
+                    vim.notify_once(
                         "jdtls: DAP configured correctly (" .. #configs .. " Java config(s))",
                         vim.log.levels.INFO
                     )
                 else
-                    vim.notify("jdtls: DAP started but no debug configuration was generated", vim.log.levels.WARN)
+                    vim.notify_once("jdtls: DAP started but no debug configuration was generated", vim.log.levels.WARN)
                 end
             end, 3000)
 
