@@ -43,8 +43,8 @@ jobs:
             +qa 2>&1 | tee startup.log
           grep -q "modules=true" startup.log
 
-      - name: Install Tree-sitter CLI
-        run: npm install -g tree-sitter-cli
+      - name: Install CLI tools
+        run: npm install -g tree-sitter-cli markdownlint-cli2@0.24.1
 
       - name: Install test parsers
         run: timeout 600 nvim --headless -u init.lua "+TSInstallSync! html xml tsx css" +qa
@@ -63,7 +63,7 @@ jobs:
           done
 
       - name: Markdown lint
-        run: npx --yes markdownlint-cli2@0.24.1 --config markdownlint-cli2.yaml README.md AGENTS.md
+        run: markdownlint-cli2 --config markdownlint-cli2.yaml README.md AGENTS.md
 
       - name: ShellCheck
         run: shellcheck bootstrap.sh
