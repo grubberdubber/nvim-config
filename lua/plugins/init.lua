@@ -764,6 +764,25 @@ local plugins = {
     {
         "nvim-telescope/telescope-fzf-native.nvim",
         build = "make",
+        event = "VeryLazy",
+        config = function()
+            require("telescope").load_extension "fzf"
+        end,
+    },
+
+    {
+        "debugloop/telescope-undo.nvim",
+        dependencies = { "nvim-telescope/telescope.nvim" },
+        keys = {
+            {
+                "<leader>su",
+                function()
+                    require("telescope").load_extension "undo"
+                    vim.cmd "Telescope undo"
+                end,
+                desc = "Undo: browse history",
+            },
+        },
     },
     -- ── JAVA DEBUG (custom setup, unlike the rest) ──────────────────
     {
