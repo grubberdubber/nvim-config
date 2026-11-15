@@ -17,6 +17,14 @@ jobs:
           mkdir -p "$HOME/.config"
           ln -sfn "$GITHUB_WORKSPACE" "$HOME/.config/nvim"
 
+      - name: Cache plugins and parsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/nvim
+            ~/.cache/nvim
+          key: nvim-${{ runner.os }}-${{ hashFiles('lazy-lock.json') }}
+
       - name: Formatting
         uses: JohnnyMorganz/stylua-action@v4
         with:
