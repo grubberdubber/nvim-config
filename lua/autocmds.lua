@@ -159,8 +159,16 @@ local function refresh_cursorline(enabled)
     end
 
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        local active = win == current and enabled and supports_cursorline(win)
-        vim.api.nvim_set_option_value("cursorline", active, { win = win })
+        local buf = vim.api.nvim_win_get_buf(win)
+        -- blink.cmp paints the selected item with `cursorline` on its menu
+        -- window (winhl maps CursorLine to BlinkCmpMenuSelection). Clearing it
+        -- from a focus/buffer event erased the highlight of the item that was
+        -- already selected until the next Tab re-enabled it, so blink floats
+        -- are left to their owner.
+        if not vim.bo[buf].filetype:match "^blink%-cmp" then
+            local active = win == current and enabled and supports_cursorline(win)
+            vim.api.nvim_set_option_value("cursorline", active, { win = win })
+        end
     end
 end
 

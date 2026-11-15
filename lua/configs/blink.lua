@@ -36,13 +36,44 @@ local function force_selector_kind(ctx, items)
     return out
 end
 
+-- blink clears the selection instead of cycling at the edges of the list when
+-- `preselect = false` (completion.list.select_next only wraps when preselect or
+-- auto_insert is enabled). Wrap explicitly so the first Tab after the last item
+-- goes back to the first one, and S-Tab on the first item goes to the last one.
+local function wrap_menu_selection(cmp, direction)
+    if not cmp.is_menu_visible() then
+        return false
+    end
+
+    local items = cmp.get_items()
+    local idx = cmp.get_selected_item_idx()
+    if idx == nil or #items == 0 then
+        return false
+    end
+
+    if direction > 0 and idx == #items then
+        require("blink.cmp.completion.list").select(1)
+        return true
+    end
+
+    if direction < 0 and idx == 1 then
+        require("blink.cmp.completion.list").select(#items)
+        return true
+    end
+
+    return false
+end
+
 return {
     keymap = {
         preset = "default",
 
-        -- ── Tab: closing-bracket jump only (parentheses/braces/HTML tags/punctuation) ──
-        -- Never touches the completion menu.
+        -- ── Tab: next menu item (wrapping at the bottom); with the menu closed,
+        -- closing-bracket jump (parentheses/braces/HTML tags/punctuation).
         ["<Tab>"] = {
+            function(cmp)
+                return wrap_menu_selection(cmp, 1)
+            end,
             "select_next",
             function(_)
                 local line = vim.api.nvim_get_current_line()
@@ -73,16 +104,49 @@ return {
             "fallback",
         },
         -- ── Shift-Tab: move up in the menu (and back through snippets) ──
-        ["<S-Tab>"] = { "select_prev", "snippet_backward", "fallback" },
-        ["<C-n>"] = { "select_next", "fallback" },
-        ["<C-p>"] = { "select_prev", "fallback" },
-        ["<Up>"] = { "select_prev", "fallback" },
-        ["<Down>"] = { "select_next", "fallback" },
+        ["<S-Tab>"] = {
+            function(cmp)
+                return wrap_menu_selection(cmp, -1)
+            end,
+            "select_prev",
+            "snippet_backward",
+            "fallback",
+        },
+        ["<C-n>"] = {
+            function(cmp)
+                return wrap_menu_selection(cmp, 1)
+            end,
+            "select_next",
+            "fallback",
+        },
+        ["<C-p>"] = {
+            function(cmp)
+                return wrap_menu_selection(cmp, -1)
+            end,
+            "select_prev",
+            "fallback",
+        },
+        ["<Up>"] = {
+            function(cmp)
+                return wrap_menu_selection(cmp, -1)
+            end,
+            "select_prev",
+            "fallback",
+        },
+        ["<Down>"] = {
+            function(cmp)
+                return wrap_menu_selection(cmp, 1)
+            end,
+            "select_next",
+            "fallback",
+        },
         -- ── Enter: ALWAYS a newline, never accepts a suggestion ─────────
         ["<CR>"] = { "fallback" },
 
-        -- ── Ctrl-y: accept the highlighted suggestion (works everywhere) ──
-        ["<C-y>"] = { "select_and_accept", "fallback" },
+        -- ── Ctrl-y: accept a blink item only when its menu is open ──
+        -- No fallback: with the menu closed this must not insert a character
+        -- from the line above or touch Minuet's inline AI suggestion.
+        ["<C-y>"] = { "select_and_accept" },
 
         ["<C-e>"] = { "hide", "fallback" },
         ["<C-space>"] = { "show", "show_documentation", "hide_documentation" },
@@ -95,7 +159,10 @@ return {
 
     completion = {
         list = {
-            selection = { preselect = false },
+            -- Navigate the menu without inserting the highlighted item.
+            -- auto_insert made <Tab> insert the first result and replace it
+            -- on the next press, which looked like flickering.
+            selection = { preselect = false, auto_insert = false },
         },
         documentation = {
             auto_show = true,
@@ -120,7 +187,10 @@ return {
                 },
             },
         },
-        ghost_text = { enabled = true },
+        -- Only Minuet may render inline gray text. Blink's own ghost preview
+        -- made normal LSP/buffer items look like AI suggestions, especially
+        -- while navigating the menu with <Tab>.
+        ghost_text = { enabled = false },
         accept = {
             auto_brackets = { enabled = true },
         },
@@ -144,6 +214,8 @@ return {
     },
 
     sources = {
+        -- Minuet/NVIDIA inline AI is intentionally absent: it lives in its own
+        -- virtual-text frontend and accepts only with <C-g>, never with <Tab>.
         default = { "lsp", "path", "snippets", "buffer", "dadbod", "html_values", "css_selectors", "emoji" },
         min_keyword_length = 0,
         providers = {
