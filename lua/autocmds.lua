@@ -49,13 +49,24 @@ vim.api.nvim_create_autocmd("BufReadPost", {
 })
 
 -- ── STRIP TRAILING WHITESPACE ON SAVE ───────────────────────────
+-- Markdown uses two trailing spaces for a hard line break, and read-only or
+-- binary buffers must not be rewritten by a substitution.
 vim.api.nvim_create_autocmd("BufWritePre", {
     desc = "Strip trailing whitespace on save",
     pattern = "*",
-    callback = function()
-        local pos = vim.api.nvim_win_get_cursor(0)
-        vim.cmd [[%s/\s\+$//e]]
-        pcall(vim.api.nvim_win_set_cursor, 0, pos)
+    callback = function(args)
+        local buf = args.buf
+        if not vim.bo[buf].modifiable or vim.bo[buf].binary or vim.bo[buf].filetype == "markdown" then
+            return
+        end
+
+        -- Run in the buffer context so `:wall` saves each buffer with its own
+        -- cursor, and keep the search history clean.
+        vim.api.nvim_buf_call(buf, function()
+            local pos = vim.api.nvim_win_get_cursor(0)
+            vim.cmd [[keepjumps keeppatterns %s/\s\+$//e]]
+            pcall(vim.api.nvim_win_set_cursor, 0, pos)
+        end)
     end,
 })
 
