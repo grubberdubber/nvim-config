@@ -117,13 +117,14 @@ vim.api.nvim_create_autocmd({ "BufWritePre" }, {
     pattern = "*",
     desc = "Force Unix line endings and replace non-breaking spaces",
     callback = function(args)
-        vim.bo[args.buf].fileformat = "unix"
-        -- Substitutions fail on non-modifiable buffers and would corrupt
-        -- binary files; line endings are still normalized above.
-        if not vim.bo[args.buf].modifiable or vim.bo[args.buf].binary then
+        local buf = args.buf
+        -- Changing fileformat raises E21 on a non-modifiable buffer, and the
+        -- substitution below would corrupt binary files.
+        if not vim.bo[buf].modifiable or vim.bo[buf].binary then
             return
         end
-        vim.api.nvim_buf_call(args.buf, function()
+        vim.bo[buf].fileformat = "unix"
+        vim.api.nvim_buf_call(buf, function()
             vim.cmd [[keepjumps keeppatterns %s/\%u00a0/ /ge]]
         end)
     end,
