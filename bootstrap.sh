@@ -171,12 +171,12 @@ for c in prettier marksman markdownlint-cli2; do
         ok=0
     fi
 done
-[ -d "$HOME/.local/share/nvim/lazy/markdown-preview.nvim/app/node_modules" ] &&
-    echo "  ✓ markdown-preview (servidor node)" ||
-    {
-        echo "  ✗ markdown-preview sin node_modules"
-        ok=0
-    }
+if [ -d "$HOME/.local/share/nvim/lazy/markdown-preview.nvim/app/node_modules" ]; then
+    echo "  ✓ markdown-preview (servidor node)"
+else
+    echo "  ✗ markdown-preview sin node_modules"
+    ok=0
+fi
 
 if [ "$ok" -eq 1 ]; then
     log "Listo. Abre nvim y todo debería estar operativo."
