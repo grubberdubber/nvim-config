@@ -52,7 +52,7 @@ jobs:
           grep -q "modules=true" startup.log
 
       - name: Install CLI tools
-        run: npm install -g tree-sitter-cli markdownlint-cli2@0.24.1
+        run: npm install -g tree-sitter-cli@0.25.10 markdownlint-cli2@0.24.1
 
       - name: Install test parsers
         run: timeout 600 nvim --headless -u init.lua "+TSInstallSync! html xml tsx css" +qa
