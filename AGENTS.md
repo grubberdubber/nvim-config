@@ -14,7 +14,7 @@ Actúa como Staff Engineer del ecosistema Neovim. Objetivo: una configuración p
 | Neovim   | 0.12.5 (usar APIs 0.11+: `vim.system`, `vim.fs.root`, `vim.diagnostic.count`, `vim.lsp.config`) |
 | Base     | NvChad v2.5 + base46 + lazy.nvim                                                                |
 | SO       | Arch Linux                                                                                      |
-| Terminal | Alacritty                                                                                        |
+| Terminal | kitty (true color + Nerd Font)                                                                  |
 | Repo     | `github.com/grubberdubber/nvim-config`, rama `main`                                             |
 | Shell    | zsh                                                                                             |
 
@@ -82,6 +82,7 @@ Cada una fue pedida, probada y aprobada por el dueño.
 - Colores: derivarlos del tema (`nvim_get_hl`, `M.base_30`) en vez de hex sueltos; si hace falta un hex fijo, documenta el motivo.
 - Atajos de teclado nuevos: buffer-locales cuando solo aplican a un filetype; nunca roban `<leader>` ni `<Space>`. Siempre con `desc`.
 - Windows/buffers especiales: restaurar opciones de ventana que se cambien (no filtrar `list`, `number`, `signcolumn`).
+- Limpieza al guardar: las sustituciones (`BufWritePre`) no deben tocar markdown (los dos espacios finales son un salto duro), binarios ni buffers no modificables.
 - Unicode: usar `vim.fn.strdisplaywidth`/`vim.str_utf_pos`; nunca offsets de bytes fijos con íconos multibyte.
 
 ## 5. Soporte de lenguajes
@@ -109,7 +110,6 @@ Objetivo: 35-40 lenguajes sin solapamientos ni consumo en reposo: Rust, C, C++, 
 ## 8. Pendientes conocidos
 
 - **Dashboard**: reescrito y modular (`lua/dashboard/{init,data,render,nav,sessions,config}.lua`). Cubre arte ASCII con degradado del tema, estado git asíncrono (rama, cambios, ahead/behind, stash, último commit), diagnósticos, LSP, formatters (faltantes), plugins, startup real, proyectos/directorios/recientes, pins, TODOs con ripgrep, sesiones por proyecto+rama (`:mksession`), búsqueda con `/`, navegación `hjkl`/flechas y lanzadores con degradación limpia si falta Telescope/fzf/lazygit. Sin `listchars` ni guías de indentación: eso solo aplica al dashboard. Pruebas headless: `nvim --headless -u init.lua -c "luafile tests/dashboard_spec.lua"`. Atajo de `listchars` en archivos normales: `<leader>ul`.
-- Confirmar `ensure_installed` de treesitter (incluir `hurl`).
 - Bloques duplicados de `lua/plugins/init.lua`: eliminados; no reintroducir specs repetidas.
 - Error de avante.nvim con luarocks/`mega`.
 - Probar `bootstrap.sh` en una máquina limpia.
