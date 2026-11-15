@@ -5,6 +5,10 @@ local H = dofile "tests/helpers.lua"
 local tmp = vim.fn.tempname()
 vim.fn.mkdir(tmp, "p")
 
+-- The lint autocommand runs external linters on the temporary files; this suite
+-- only covers the save-time cleanup, so it must not depend on installed tools.
+pcall(vim.api.nvim_clear_autocmds, { group = "nvim-lint" })
+
 local function path(name)
     return tmp .. "/" .. name
 end
