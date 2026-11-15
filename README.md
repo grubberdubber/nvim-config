@@ -65,7 +65,7 @@ portable, but `bootstrap.sh` uses `pacman` and is intentionally Arch-specific.
 | Terminal | Alacritty with true color and a Nerd Font |
 | Build tools | `git`, `make`, `cargo` (avante.nvim) |
 | Tree-sitter | `tree-sitter-cli` 0.25.x (0.27 removed `--no-bindings`, which the pinned parser build uses) |
-| Tests | `cargo-nextest` for Rust; pytest and Go toolchains |
+| Tests | `cargo-nextest`, pytest, Go, Vitest, JUnit 5, PHPUnit, RSpec and Flutter projects |
 | Search | `ripgrep`, `fd` |
 | Runtime | `nodejs`, `tree-sitter-cli`, `jq` (optional, for Hurl) |
 
@@ -144,12 +144,18 @@ nvim --headless "+checkhealth" +qa
 
 `blink.cmp` provides LSP, path, snippet and buffer completion, with custom sources for
 CSS selectors, HTML values, Dadbod and SQL administration. `<Tab>` selects the next item
-when the menu is open and jumps over closing delimiters otherwise; `<CR>` always inserts a
-newline. Command-line completion opens automatically after `:` without preselecting a
+when the menu is open without inserting it (accept with `<C-y>`) and jumps over closing
+delimiters otherwise; `<CR>` always inserts a newline. Command-line completion opens automatically after `:` without preselecting a
 command. Emoji completion is limited to Markdown and gitcommit messages and needs at
 least two letters after the colon (`:sm`); in Markdown a completed `:shortcode:` is
-automatically converted to its emoji. Windsurf provides inline AI suggestions with
-virtual text; `<C-g>` accepts and `<C-]>` dismisses. The search counter (`[3/7]`) and the
+automatically converted to its emoji. Minuet provides inline suggestions through
+NVIDIA NIM on demand, outside blink's menu: `<M-]>` requests or advances, `<C-g>`
+accepts and `<C-]>` dismisses; the inline suggestion is dropped as soon as blink's menu
+opens, so it never overlaps the menu. Blink's own ghost text is disabled, so the only
+gray inline text is Minuet's suggestion; `<C-y>` accepts only a regular blink item while
+its menu is open and does nothing otherwise, and `<Tab>` never accepts AI, it only
+navigates blink or jumps over delimiters and snippets.
+Typing never sends a request. The search counter (`[3/7]`) and the
 visual selection size (`3 lines, 51 chars`) appear in the command-line row below the
 statusline, never inside either bar; they are restored after commands such as `:w` and
 `:Lazy`. Both bars use the same theme-aware panel tone with a readable minimum contrast.
@@ -195,8 +201,9 @@ byte-offset assumptions for multibyte icons.
 
 ### Testing and Lua development
 
-- Neotest runs tests through adapters for Python (pytest), Go and Rust (cargo-nextest).
-  Results are available in the summary and output panels.
+- Neotest runs tests through adapters for Python (pytest), Go, Rust (cargo-nextest),
+  JavaScript/TypeScript (Vitest), Java (JUnit 5), PHP (PHPUnit), Ruby (RSpec) and
+  Dart/Flutter. Results are available in the summary and output panels.
 - lazydev gives `lua_ls` the Neovim runtime and the libraries of required plugins, so
   configuration and plugin development use accurate types and fewer false diagnostics.
 
@@ -250,6 +257,7 @@ flutter-tools.nvim when the Flutter SDK is in `PATH`.
 | `<leader>sw` | Replace the word under the cursor |
 | `<leader>ft` | Search TODO/FIXME comments |
 | `<leader>gg` | Open Lazygit |
+| `<leader>su` | Browse the undo history with Telescope |
 
 ### LSP and diagnostics
 

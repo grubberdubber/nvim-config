@@ -47,10 +47,11 @@ Cada una fue pedida, probada y aprobada por el dueño.
 
 ### Autocompletado blink.cmp (`lua/configs/blink.lua`)
 
-- `<Tab>`: con menú abierto **baja** (`select_next` primero); sin menú **salta cierres** (`)`, `]`, `}`, `</div>` completo, puntuación suelta) y avanza snippets.
-- `<S-Tab>`: **sube** (`select_prev`), luego `snippet_backward`, luego fallback.
-- `<C-n>`/`<Down>` bajan, `<C-p>`/`<Up>` suben, `<C-y>` acepta, `<C-e>` cierra, `<C-space>` abre, **`<CR>` es siempre salto de línea y nunca acepta**.
-- `preselect = false`, `ghost_text` activo, `min_keyword_length = 0`, auto-brackets activos.
+- `<Tab>`: con menú abierto **baja** (`select_next` primero) y en el último ítem **vuelve al primero**; sin menú **salta cierres** (`)`, `]`, `}`, `</div>` completo, puntuación suelta) y avanza snippets.
+- `<S-Tab>`: **sube** (`select_prev`) y en el primer ítem va al último, luego `snippet_backward`, luego fallback. El ciclo se hace en el keymap (`wrap_menu_selection`) porque blink no cicla con `preselect = false`; aplica igual a `<C-n>`/`<Down>` y `<C-p>`/`<Up>`.
+- `<C-n>`/`<Down>` bajan, `<C-p>`/`<Up>` suben, `<C-y>` acepta solo con el menú de blink abierto (sin fallback: no inserta carácter de la línea superior ni toca la IA), `<C-e>` cierra, `<C-space>` abre, **`<CR>` es siempre salto de línea y nunca acepta**.
+- El menú de blink pinta el ítem seleccionado con `cursorline` (`winhl` → `BlinkCmpMenuSelection`); los autocmds que tocan `cursorline` no deben entrar en ventanas `blink-cmp-*` o el ítem ya seleccionado pierde el resaltado.
+- `preselect = false`, `auto_insert = false` (Tab navega el menú sin insertar ni reemplazar texto; se acepta con `<C-y>`), `ghost_text` desactivado (la única letra gris inline debe ser la sugerencia de Minuet; el autocompletado normal vive en el menú), `min_keyword_length = 0`, auto-brackets activos.
 - Fuentes propias: `css_selectors`, `html_values`, `dadbod`, y las de SQL admin. No las quites ni cambies su orden sin pedir permiso.
 
 ### Módulos propios (`lua/configs/`)
@@ -66,8 +67,8 @@ Cada una fue pedida, probada y aprobada por el dueño.
 - `@tag.delimiter` en `chadrc.lua` = `#CFE3F7` (blanco azulado suave; el dueño lo eligió).
 - Temas en `lua/themes/`: `fluorodark.lua` (neón; `MatchParen`/`MatchWord` con fondo `#16304F`) y `sakura_dracula.lua` (pastel sobre fondo Dracula `#282A36`, `TRANSPARENT = false`). No mezcles sus paletas. Al editar un tema conserva todas las claves de `base_30` y `base_16` y la llamada final a `require("base46").override_theme`.
 - Parches a la documentación de blink con rainbow-delimiters en `autocmds.lua`: no tocar.
-- Windsurf: `<C-g>` acepta, `<C-]>` limpia; usa virtual text, `enable_cmp_source = false` y el commit con el nil check (`46fe768`). La autenticación se comparte en `~/.codeium/config.json` (claves `apiKey` y `api_key`). El color de sugerencia se hereda de `Comment`. `;` = `:` en modo normal.
 - Avante: el menú `<leader>ag` solo ofrece proveedores NVIDIA NIM y OpenRouter; no reintroducir Gemini en ese menú. Lee `NVIDIA_API_KEY` y `OPENROUTER_API_KEY` del entorno (nunca hardcodearlas en el repo). `;` = `:` en modo normal.
+- Minuet: autocompletado inline manual con NVIDIA NIM; no activar `auto_trigger_ft` (no debe pedir sugerencias mientras se escribe) y no agregarlo a las fuentes de blink: la IA vive fuera del menú de blink. `<M-]>` pide/avanza, `<M-[>` retrocede, `<M-a>` acepta una línea, `<C-g>` acepta todo y `<C-]>` descarta; `<Tab>` nunca acepta IA (solo navega blink/cierres). El autocmd `User BlinkCmpMenuOpen` descarta la sugerencia inline al abrir el menú de blink; es necesario porque `show_on_completion_menu` no borra el extmark ya dibujado. Usa `nvidia/nemotron-3.5-lightning-30b-a3b` con `enable_thinking = false`; no cambiar a un modelo de razonamiento para completado.
 - Cliente HTTP: `lua/plugins/api.lua` con `jellydn/hurl.nvim`; atajos locales `<leader>H*` solo en archivos `.hurl`; requiere `hurl` y `jq`. Decisión consciente: **no** usar kulala.nvim (núcleo cerrado, requiere token de licencia) ni rest.nvim (sin mantenimiento).
 - Fuentes/emoji: la configuración de fontconfig vive en `~/.config/fontconfig/conf.d/` (`60-emoji-first.conf`, `61-emoji-fix.conf`). No se toca desde Neovim.
 - La configuracion tiene que estar toda en ingles
@@ -112,7 +113,6 @@ Objetivo: 35-40 lenguajes sin solapamientos ni consumo en reposo: Rust, C, C++, 
 - Bloques duplicados de `lua/plugins/init.lua`: eliminados; no reintroducir specs repetidas.
 - Error de avante.nvim con luarocks/`mega`.
 - Probar `bootstrap.sh` en una máquina limpia.
-- Codeium/Windsurf conserva la autenticación existente; si el servidor no arranca, ejecutar `:Codeium Auth`.
 - Completado de cabeceras/métodos HTTP en archivos `.hurl`: el plan es una fuente propia de blink.cmp (o un LSP en Rust) con datos de los registros IANA; `hurl-lsp` fue evaluado y descartado por inmaduro (pre-1.0, 0 estrellas, sin nombres de cabeceras).
 
 ## 9. Qué NO hacer
