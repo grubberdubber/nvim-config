@@ -17,25 +17,13 @@ vim.treesitter.get_node_text = function(node, source, opts)
 end
 
 -- ── MASON PERMISSIONS FIX ────────────────────────────────────────
-local mason_bin = vim.fn.stdpath "data" .. "/mason/bin"
-
-vim.api.nvim_create_autocmd("VimEnter", {
-    once = true,
-    desc = "Fix Mason binary permissions on startup",
-    callback = function()
-        if vim.fn.isdirectory(mason_bin) == 1 then
-            vim.fn.system { "chmod", "-R", "+x", mason_bin }
-        end
-    end,
-})
-
+-- init.lua already checks the current binaries before the first LSP starts;
+-- this only covers tools installed while Neovim is running.
 vim.api.nvim_create_autocmd("User", {
     pattern = "MasonToolInstalled",
     desc = "Fix Mason binary permissions after installing a tool",
     callback = function()
-        if vim.fn.isdirectory(mason_bin) == 1 then
-            vim.fn.system { "chmod", "-R", "+x", mason_bin }
-        end
+        require("configs.mason_permissions").ensure()
     end,
 })
 

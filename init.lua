@@ -8,16 +8,14 @@
 vim.g.nvim_start_hrtime = (vim.uv or vim.loop).hrtime()
 
 -- ── MASON PERMISSION FIX (runs first, before any plugin) ─────────
--- Resolves EACCES on Mason binaries on Kali/Debian/Ubuntu without any
--- manual post-install chmod. Synchronous on purpose: it must finish
--- before the first LSP process starts.
+-- Mason tools such as tree-sitter and rust-analyzer must be visible to
+-- plugins that use vim.fn.executable() during startup, not only to the LSP
+-- client after Mason has loaded. The permission check is synchronous on
+-- purpose: executables must be ready before the first LSP process starts.
 local mason_bin = vim.fn.stdpath "data" .. "/mason/bin"
 if vim.fn.isdirectory(mason_bin) == 1 then
-    -- Mason tools such as tree-sitter and rust-analyzer must be visible to
-    -- plugins that use vim.fn.executable() during startup, not only to the
-    -- LSP client after Mason has loaded.
     vim.env.PATH = vim.env.PATH .. ":" .. mason_bin
-    vim.fn.system { "chmod", "-R", "+x", mason_bin }
+    require("configs.mason_permissions").ensure()
 end
 
 vim.g.base46_cache = vim.fn.stdpath "data" .. "/base46/"
