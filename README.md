@@ -223,7 +223,8 @@ editor specs and `ai.lua`, `api.lua`, `extras.lua`, `languages.lua`,
 
 ## Key bindings
 
-`<leader>` is `Space`; `which-key` lists the complete map.
+`<leader>` is `Space`; `which-key` lists the complete map, `<leader>fk`
+fuzzy-searches it with Telescope, and `<leader>ch` opens NvChad's cheatsheet.
 
 ### General
 

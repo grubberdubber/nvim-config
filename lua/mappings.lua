@@ -45,6 +45,9 @@ map("n", "[d", vim.diagnostic.goto_prev, { desc = "Diagnostics: previous" })
 map("n", "]d", vim.diagnostic.goto_next, { desc = "Diagnostics: next" })
 map("n", "<leader>df", vim.diagnostic.open_float, { desc = "Diagnostics: show float" })
 
+-- ── HELP ────────────────────────────────────────────────────────
+map("n", "<leader>fk", "<cmd>Telescope keymaps<CR>", { desc = "Keymaps: search all with Telescope" })
+
 -- ── SYMBOLS (TELESCOPE + LSP) ────────────────────────────────────
 map("n", "<leader>ss", "<cmd>Telescope lsp_document_symbols<CR>", { desc = "Symbols: document" })
 map("n", "<leader>sS", "<cmd>Telescope lsp_workspace_symbols<CR>", { desc = "Symbols: workspace" })
