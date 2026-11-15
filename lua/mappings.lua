@@ -3,11 +3,6 @@ require "nvchad.mappings"
 
 local map = vim.keymap.set
 
--- ── AI COMPLETION (WINDSURF, CTRL+G ONLY) ───────────────────────
--- Link instead of a hardcoded dark hex: the suggestion stays readable when
--- the theme changes. The plugin spec installs <C-g>/<C-]>.
-vim.api.nvim_set_hl(0, "CodeiumSuggestion", { link = "Comment", force = true })
-
 -- ── CORE ─────────────────────────────────────────────────────────
 map("n", ";", ":", { desc = "Command: enter command-line mode" })
 map("i", "jk", "<ESC>", { desc = "Insert: exit to normal mode" })

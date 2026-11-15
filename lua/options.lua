@@ -1,7 +1,3 @@
--- ── WINDSURF OWNS ITS VIRTUAL-TEXT KEYBINDINGS ──────────────────
--- The plugin maps <C-g>/<C-]> in the spec; no legacy Codeium Vim mappings
--- are needed here.
-
 require "nvchad.options"
 
 local o = vim.o
