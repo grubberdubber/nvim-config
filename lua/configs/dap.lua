@@ -221,7 +221,9 @@ dap.configurations.rust = {
         type = "codelldb",
         request = "launch",
         program = function()
-            vim.fn.system "cargo build"
+            -- The DAP callback must return the binary synchronously, so wait
+            -- here; vim.system avoids the shell and keeps errors in one place.
+            vim.system({ "cargo", "build" }):wait()
             return prompt_program(vim.fn.getcwd() .. "/target/debug/")
         end,
         cwd = "${workspaceFolder}",
