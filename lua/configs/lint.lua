@@ -13,6 +13,8 @@ lint.linters_by_ft = {
     less = { "stylelint" },
     vue = { "stylelint" },
     markdown = { "markdownlint-cli2" },
+    ruby = { "rubocop" },
+    haskell = { "hlint" },
 }
 
 -- ── ARGUMENT SYNC (SQLFLUFF) ─────────────────────────────────────

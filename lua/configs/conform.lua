@@ -13,6 +13,7 @@ local options = {
         javascriptreact = { "prettier" },
         typescriptreact = { "prettier" },
         vue = { "prettier" },
+        graphql = { "prettier" },
 
         -- ── Systems and compiled languages ───────────────────────────
         python = { "black" },
@@ -27,6 +28,10 @@ local options = {
         kotlin = { "ktlint" },
         dart = { "dart_format" }, -- ships with the Flutter SDK
         scala = { "scalafmt" },
+        cs = { "csharpier" },
+        zig = { "zigfmt" }, -- ships with the Zig toolchain
+        elixir = { "mix" }, -- ships with Elixir
+        haskell = { "fourmolu" },
 
         -- ── Scripting and automation ─────────────────────────────────
         bash = { "shfmt" },
@@ -39,6 +44,8 @@ local options = {
         toml = { "taplo" },
         terraform = { "terraform_fmt" },
         dockerfile = { "prettier" },
+        xml = { "xmllint" }, -- ships with libxml2
+        hurl = { "hurlfmt" }, -- ships with hurl
 
         -- ── Data science ─────────────────────────────────────────────
         r = { "styler" },

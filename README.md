@@ -76,6 +76,7 @@ NvChad v2.5 · lazy.nvim · Neovim 0.12+ · Arch Linux
 | Tree-sitter | `tree-sitter-cli` 0.25.x (0.27 removed `--no-bindings`, used by the pinned parser build) |
 | Search | `ripgrep`, `fd` |
 | Runtime | `nodejs` (markdownlint, prettier), `jq` (Hurl), `tree-sitter-cli` |
+| Language SDKs | Go, Rust, Zig, Elixir (`mix`), GHC/Cabal (Haskell), `libxml2` (xmllint) |
 | Tests | `cargo-nextest`, pytest, Go, Vitest, JUnit 5, PHPUnit, RSpec and Flutter SDKs |
 
 ```bash
@@ -115,7 +116,7 @@ nvim --headless "+checkhealth" +qa
 | **AI** | Minuet inline suggestions on demand through NVIDIA NIM; Avante for agentic edits with NVIDIA NIM or OpenRouter |
 | **LSP** | Native `vim.lsp.config` / `vim.lsp.enable`, inlay hints and code lens per client |
 | **Formatting** | conform.nvim on save with per-filetype chains and LSP fallback |
-| **Linting** | nvim-lint with Ruff, ShellCheck, Hadolint, Yamllint, Stylelint, SQLFluff and markdownlint-cli2 |
+| **Linting** | nvim-lint with Ruff, ShellCheck, Hadolint, Yamllint, Stylelint, SQLFluff, RuboCop, HLint and markdownlint-cli2 |
 | **Debugging** | nvim-dap, DAP UI and virtual text; Python, C, C++, Rust, Go, Java and Node adapters |
 | **Data** | Dadbod and `sqls.nvim` for MySQL, MariaDB, PostgreSQL and SQLite; dialect picker and SQL admin helpers |
 | **HTTP** | Hurl for executable requests and assertions in `.hurl` files |
@@ -322,7 +323,7 @@ sort -k2 -rn /tmp/startup.log | head -20
 
 ## Validation
 
-The repository ships five headless suites plus a Lua syntax and formatting
+The repository ships six headless suites plus a Lua syntax and formatting
 check, all run in CI:
 
 ```bash
@@ -334,8 +335,9 @@ nvim --headless -u NONE -c "lua for _, f in ipairs(vim.fn.glob('lua/**/*.lua', f
 ```
 
 The suites cover dashboard layout and state, per-language class/id detection,
-malformed-tag ranges (HTML, XML, JSX and SVG), the save-time cleanup rules and
-the Mason executable-bit fixer. CI also lints the Markdown docs and runs
+malformed-tag ranges (HTML, XML, JSX and SVG), the save-time cleanup rules, the
+Mason executable-bit fixer and the language tooling matrix (formatters,
+linters and LSP configs). CI also lints the Markdown docs and runs
 ShellCheck on `bootstrap.sh`. For a full health check:
 
 ```bash

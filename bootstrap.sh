@@ -48,7 +48,8 @@ CORE=(
     firefox
 )
 
-EXTRA=(jdk-openjdk php composer dotnet-sdk zathura zathura-pdf-mupdf texlive-latex texlive-binextra)
+EXTRA=(jdk-openjdk php composer dotnet-sdk zathura zathura-pdf-mupdf texlive-latex texlive-binextra
+    zig elixir ghc cabal-install libxml2)
 # Avante compila crates en Rust: cargo es obligatorio (rustup ya lo trae)
 if ! pacman -Qq rustup >/dev/null 2>&1; then CORE+=(rust); fi
 
@@ -94,15 +95,17 @@ local packages = {
   "html-lsp", "intelephense", "jdtls", "kotlin-language-server",
   "lua-language-server", "marksman", "nimlangserver", "omnisharp",
   "powershell-editor-services", "pyright", "rust-analyzer", "solargraph",
-  "sqlls", "sqls", "texlab", "typescript-language-server",
+  "sqls", "texlab", "typescript-language-server",
   -- Additional LSPs and linters (explicit, reproducible install)
   "harper-ls", "zls", "elixir-ls", "vue-language-server",
-  "yaml-language-server", "json-lsp",
+  "yaml-language-server", "json-lsp", "lemminx", "dockerfile-language-server",
+  "graphql-language-service-cli", "haskell-language-server",
   "ruff", "shellcheck", "hadolint", "yamllint",
   -- Formatters y linters
   "black", "clang-format", "google-java-format", "ktlint", "markdownlint-cli2",
   "php-cs-fixer", "prettier", "rubyfmt", "shfmt", "sql-formatter", "sqlfluff",
-  "stylelint", "stylua", "taplo", "yamlfmt",
+  "stylelint", "stylua", "taplo", "yamlfmt", "swiftformat", "fourmolu", "csharpier",
+  "rubocop", "hlint",
   -- Debuggers
   "codelldb", "delve", "java-debug-adapter", "java-test", "js-debug-adapter",
 }
