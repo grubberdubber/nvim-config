@@ -12,6 +12,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Expose the checkout as the Neovim config
+        run: |
+          mkdir -p "$HOME/.config"
+          ln -sfn "$GITHUB_WORKSPACE" "$HOME/.config/nvim"
+
       - name: Formatting
         uses: JohnnyMorganz/stylua-action@v4
         with:
@@ -32,7 +37,11 @@ jobs:
             -c "qa"
 
       - name: Headless startup
-        run: timeout 300 nvim --headless -u init.lua "+qa"
+        run: |
+          nvim --headless -u init.lua \
+            "+lua print('modules=' .. tostring(package.loaded['options'] ~= nil and package.loaded['dashboard'] ~= nil))" \
+            +qa 2>&1 | tee startup.log
+          grep -q "modules=true" startup.log
 
       - name: Install Tree-sitter CLI
         run: npm install -g tree-sitter-cli
@@ -44,7 +53,12 @@ jobs:
         run: |
           for spec in tests/*_spec.lua; do
             echo "::group::$spec"
-            timeout 300 nvim --headless -u init.lua -c "luafile $spec"
+            if ! out=$(timeout 120 nvim --headless -u init.lua -c "luafile $spec" -c "qa!" 2>&1); then
+              echo "$out"
+              exit 1
+            fi
+            echo "$out"
+            grep -q "0 failure(s)" <<<"$out" || exit 1
             echo "::endgroup::"
           done
 
