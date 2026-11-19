@@ -2,7 +2,7 @@
 local M = {}
 
 M.base46 = {
-    theme = "falcon", -- Switched automatically by the theme picker
+    theme = "oxocarbon", -- Switched automatically by the theme picker
     hl_override = {
         -- Both bars use the theme's panel tone (base46 one_bg) and are
         -- normalized to one readable range in ensure_status_hl. The breadcrumb
